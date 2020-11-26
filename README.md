@@ -17,7 +17,7 @@
 
 ### Web Content Aggregation Bot 网络内容聚合机器人  
 #### 最好的综合型订阅制机器人  
-前身是给[CQ-picfinder-robot](https://github.com/Tsuk1ko/CQ-picfinder-robot)做的小挂件（已完全脱离）  
+前身是给[CQ-picfinder-robot](https://github.com/Tsuk1ko/CQ-picfinder-robot)做的小挂件（已完全脱离）（然而wiki还是可以参考的）  
 如果有bug请复制pm2log中的错误信息并提交issus，我会尽快解决（可能） 
 觉得好用不妨点个Star谢谢  
 
