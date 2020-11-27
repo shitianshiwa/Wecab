@@ -14,10 +14,12 @@ const node_localStorage = require('node-localstorage');
 const node_localStorage2 = node_localStorage.LocalStorage;
 const wecab = new node_localStorage2('./wecab'); //插件是否连上机器人
 const dayjs = require('dayjs');
+const downloadx = require('../Downloadx'); //输入url，返回文件路径
+const ClearDownloadx = require('../ClearDownloadx') //删除文件
 
 const config = require('../config');
 //console.log(config);
-const PROXY_CONF = config.default.proxy;//发现套了一个default。。！
+const PROXY_CONF = config.default.proxy; //发现套了一个default。。！
 const DB_PORT = 27017;
 const DB_PATH = "mongodb://127.0.0.1:" + DB_PORT;
 const BEARER_TOKEN = "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA";
@@ -452,6 +454,7 @@ function checkTwiTimeline() {
         if (firish == true) {
             return;
         }
+        ClearDownloadx();
         await mongodb(DB_PATH, {
             useUnifiedTopology: true
         }).connect().then(async mongo => {
@@ -665,28 +668,29 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false)
                     if (media[i].type == "photo") {
                         //src = [media[i].media_url_https.substring(0, media[i].media_url_https.length - 4), '?format=jpg&name=4096x4096'].join("");
                         src = [media[i].media_url_https.substring(0, media[i].media_url_https.length - 4), (media[i].media_url_https.search("jpg") != -1 ? '?format=jpg&name=orig' : '?format=png&name=orig')].join(""); //?format=png&name=orig 可能出现这种情况
-                        pics += await sizeCheck(src) ? `[CQ:image,cache=0,file=${src}]` : `[CQ:image,cache=0,file=${media[i].media_url_https}] 注：这不是原图`;
+                        pics += await sizeCheck(src) ? `[CQ:image,cache=0,file=file:///${await downloadx(src,"photo",i)}]` : `[CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https,"photo",i)}] 注：这不是原图`;
                     } else if (media[i].type == "animated_gif") {
                         try {
-                            await exec(`ffmpeg -i ${media[i].video_info.variants[0].url} -loop 0 -y ${__dirname}/temp.gif`)
+                            await exec(`ffmpeg -i ${await downloadx(media[i].video_info.variants[0].url,"animated_gif",i)} -loop 0 -y ${__dirname}/temp.gif`)
                                 .then(async ({
                                     stdout,
                                     stderr
                                 }) => {
                                     if (stdout.length == 0) {
-                                        if (fs.statSync(`${__dirname}/temp.gif`).size < MAX_SIZE) { //帧数过高可能发不出来gif
-                                            let gif = fs.readFileSync(`${__dirname}/temp.gif`);
-                                            let base64gif = Buffer.from(gif, 'binary').toString('base64');
-                                            pics += `这是一张动图 [CQ:image,cache=0,file=${media[i].media_url_https}]` + `动起来看这里${media[i].video_info.variants[0].url}`
-                                            pics += `[CQ:image,file=base64://${base64gif}]`;
+                                        if (fs.statSync(`${__dirname}/temp.gif`).size < MAX_SIZE) { //帧数过高可能发不出来gif,gif和插件模块放在一块，不在tmp文件夹里
+                                            //let gif = fs.readFileSync(`${__dirname}/temp.gif`);
+                                            //let base64gif = Buffer.from(gif, 'binary').toString('base64');
+                                            pics += `这是一张动图 [CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https,"animated_gif",i)}]` + `动起来看这里${media[i].video_info.variants[0].url}`
+                                            pics += `[CQ:image,file=file:///${__dirname}/temp.gif]`;
+                                            //pics += `[CQ:image,file=base64://${base64gif}]`;
                                             //console.log(__dirname + "/temp.gif");
                                             //pics += `[CQ:image,file=file:///${__dirname}/temp.gif]`;
-                                        } else pics += `这是一张动图 [CQ:image,cache=0,file=${media[i].media_url_https}]` + `动起来看这里${media[i].video_info.variants[0].url}`;
+                                        } else pics += `这是一张动图 [CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https,"animated_gif",i)}]` + `动起来看这里${media[i].video_info.variants[0].url}`;
                                     }
                                 })
                         } catch (err) {
                             logger2.error(new Date().toString() + ",推特动图：" + err);
-                            pics += `这是一张动图 [CQ:image,cache=0,file=${media[i].media_url_https}]` + `动起来看这里${media[i].video_info.variants[0].url}`;
+                            pics += `这是一张动图 [CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https,"animated_gif",i)}]` + `动起来看这里${media[i].video_info.variants[0].url}`;
                         }
                     } else if (media[i].type == "video") {
                         let mp4obj = [];
@@ -696,7 +700,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false)
                         mp4obj.sort((a, b) => {
                             return b.bitrate - a.bitrate;
                         });
-                        payload.push(`[CQ:image,cache=0,file=${media[i].media_url_https}]`,
+                        payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https)}]`,
                             `视频地址: ${mp4obj[0].url}`);
                     }
                 }
@@ -713,11 +717,14 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false)
         let reply_tweet = await getSingleTweet(tweet.in_reply_to_status_id_str);
         payload.push("回复了", await format(reply_tweet, -1, false, true));
     }
+    let ii = 0;
     if ("card" in tweet) {
         // payload.push(tweet.binding_values.title.string_value, urlExpand(card.url));
         if (/poll\dchoice/.test(tweet.card.name)) {
+            let i = 0;
             if ("image_large" in tweet.card.binding_values) {
-                payload.push(`[CQ:image,cache=0,file=${tweet.card.binding_values.image_large.url}]`);
+                payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.image_large.url,"image_large",i)}]`);
+                i++;
             }
 
             /*let end_time = new Intl.DateTimeFormat('zh-Hans-CN', {
@@ -746,8 +753,9 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false)
         } else if (/summary/.test(tweet.card.name)) {
             if ("photo_image_full_size_original" in tweet.card.binding_values) {
                 if (sizeCheck(tweet.card.binding_values.photo_image_full_size_original.image_value.url)) {
-                    payload.push(`[CQ:image,cache=0,file=${tweet.card.binding_values.photo_image_full_size_original.image_value.url}]`);
-                } else payload.push(`[CQ:image,cache=0,file=${tweet.card.binding_values.photo_image_full_size_large.image_value.url}]`);
+                    payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.photo_image_full_size_original.image_value.url,"photo_image_full",ii)}]`);
+                } else payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.photo_image_full_size_large.image_value.url,"photo_image_full",ii)}]`);
+                ii++;
             }
             payload.push(tweet.card.binding_values.title.string_value, tweet.card.binding_values.description.string_value);
         }

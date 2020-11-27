@@ -24,6 +24,7 @@ import nbnhhsh from "./modules/plugin/nbnhhsh";
 import logger2 from './modules/logger2'; //日志功能
 import iHaveAfriend from './modules/plugin/iHaveAfriend';
 import node_localStorage from 'node-localstorage';
+import mkdirTmp from './modules/mkdirTmp';//创建临时文件文件夹
 const node_localStorage2 = node_localStorage.LocalStorage;
 const wecab = new node_localStorage2('./wecab'); //插件是否连上机器人
 
@@ -33,7 +34,7 @@ const setting = config.bot;
 const bot = new CQWebSocket(config.cqws);
 const rand = RandomSeed.create();
 const logger = new Logger();
-
+mkdirTmp();
 wecab.setItem("huozhe", false)
 weibo.weiboReply(replyMsg);
 bilibili.bilibiliReply(replyMsg);
