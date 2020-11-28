@@ -5,9 +5,9 @@ const logger2 = require('./logger2'); //日志功能
 module.exports = function ClearDownloadx() {
     return empty('./tmp', false, (o) => {
         if (o.error) {
-            logger2.error(new Date().toString() + "," + o.error);
+            logger2.error(new Date().toString() + " ,清空下载缓存tmp文件夹失败, " + o.error);
         } else {
-            logger2.info(new Date().toString() + "," + "成功清空下载缓存,tmp");
+            //logger2.info(new Date().toString() + " ,成功清空下载缓存tmp文件夹");
         }
         //console.log(o.removed);
         //console.log(o.failed);
