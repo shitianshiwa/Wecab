@@ -9,7 +9,7 @@
         "canvas": "^2.6.1",
         "cq-websocket": "^2.1.1",
         "dayjs": "^1.8.19",
-        "download": "^8.0.0",
+        "download": "^7.1.0",
         "empty-folder": "^2.0.4",
         "esm": "^3.2.25",
         "fast-xml-parser": "^3.17.4",
