@@ -18,14 +18,14 @@
         "hjson": "^3.2.2",
         "lodash": "^4.17.20",
         "mongodb": "^3.6.2",
+        "node-cache": "^5.1.2",
         "node-localstorage": "^2.1.5",
         "pm2": "^4.4.1",
         "random-seed": "^0.3.0",
         "seedrandom": "^3.0.5",
         "sqlite": "^4.0.14",
         "sqlite3": "^5.0.0",
-        "winston": "^3.2.1",
-        "node-cache": "^5.1.2"
+        "winston": "^3.2.1"
     },
     "devDependencies": {},
     "scripts": {
