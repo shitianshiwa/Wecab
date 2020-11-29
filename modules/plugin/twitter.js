@@ -449,7 +449,6 @@ function checkTwiTimeline() {
     let check_interval = 7 * 60 * 1000; //6分钟一次
     let check_interval2 = 10000; //api调用延时 10秒
     let i = 0;
-    let firish = false;
     setInterval(async () => {
         if (wecab.getItem("huozhe") == "false") {
             logger2.info(new Date().toString() + ",连不上机器人，跳过订阅twitter"); //长时间连不上还是可能丢失信息的，因为消息源会更新覆盖旧的
