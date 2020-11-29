@@ -248,7 +248,7 @@ function getSingleTweet(tweet_id_str) {
  * @param {number} count 获取数量，最大为200
  * @returns {Promise} 用户时间线，如果错误结果为false
  */
-function getUserTimeline(user_id, count = 2, include_rt = false, exclude_rp = true) {
+function getUserTimeline(user_id, count = 2, include_rt = false, exclude_rp = true, since_id = "1") {
     return axios({
         method: 'GET',
         url: "https://api.twitter.com/1.1/statuses/user_timeline.json",
@@ -261,7 +261,8 @@ function getUserTimeline(user_id, count = 2, include_rt = false, exclude_rp = tr
             "count": count,
             "exclude_replies": exclude_rp,
             "include_rts": include_rt,
-            "tweet_mode": "extended"
+            "tweet_mode": "extended",
+            since_id : since_id
         },
         //是否启用代理访问推特
         proxy: proxy2,
@@ -300,7 +301,7 @@ function searchUser(name) {
     }).then(res => {
         return res.data[0]
     }).catch(err => {
-        logger2.info(new Date().toString() + ",推特4：" + err.response.data);
+        logger2.info(new Date().toString() + ",Twitter searchUser error：" + err.response.data);
         return false;
     })
 }
@@ -443,7 +444,10 @@ function unSubscribe(uid, context) {
  */
 function checkTwiTimeline() {
     if (!connection) return;
-    let check_interval = 6 * 60 * 1000; //6分钟一次
+    //return; //未做测试警告
+    let firish = false;
+    let check_interval = 7 * 60 * 1000; //6分钟一次
+    let check_interval2 = 10000; //api调用延时 10秒
     let i = 0;
     let firish = false;
     setInterval(async () => {
@@ -524,7 +528,7 @@ function checkTwiTimeline() {
                         if (i < subscribes.length) checkEach();
                         else firish = false;
                     }
-                }, (check_interval - subscribes.length * 1000) / subscribes.length);
+                }, check_interval2);
             }
         });
     }, check_interval)
@@ -799,7 +803,7 @@ function rtTimeline(context, name, num) {
                 if (timeline.length - 1 < num) timeline = await getUserTimeline(user.id_str, 50);
                 if (timeline.length - 1 < num) timeline = await getUserTimeline(user.id_str, 1, true, false);
                 format(timeline[num]).then(tweet_string => {
-                    let payload = [tweet_string, `https://twitter.com/${user.screen_name}/status/${timeline[num].id_str}`].join('\n\n');
+                    let payload = [tweet_string, `https://twitter.com/${user.screen_name}/status/${timeline[num].id_str}`].join('\r\n\r\n');
                     replyFunc(context, payload);
                 }).catch(err => logger2.error(new Date().toString() + ",推特rtTimeline：" + err));
                 //error: Fri Oct 16 2020 07:02:20 GMT+0800 (GMT+08:00),推特rtTimeline：TypeError: Cannot use 'in' operator to search for 'full_text' in undefined
