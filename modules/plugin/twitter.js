@@ -503,7 +503,7 @@ function checkTwiTimeline() {
                                         groups.forEach(group_id => {
                                             if (checkOption(tweet, subscribes[i][group_id])) {
                                                 format(tweet, subscribes[i].uid).then(payload => {
-                                                    payload += ii + "\n";
+                                                    payload = ii + "\n" + payload;
                                                     payload += `\nhttps://twitter.com/${tweet.user.screen_name}/status/${tweet.id_str}`
                                                     replyFunc({
                                                         group_id: group_id,
