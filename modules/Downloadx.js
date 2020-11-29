@@ -9,11 +9,11 @@ const logger2 = require('./logger2'); //日志功能
 const PROXY_CONF = config.default.proxy; //发现套了一个default。。！
 var proxyip = false;
 if (PROXY_CONF.host.length > 0 && PROXY_CONF.port !== 0) {
-    proxyip = {
+    proxyip = "http://" + PROXY_CONF.host + ":" + PROXY_CONF.port;
+    /*{
         host: PROXY_CONF.host,
         port: PROXY_CONF.port
-    }
-    //"http://" + PROXY_CONF.host + ":" + PROXY_CONF.port;
+    }*/
 }
 module.exports = async function Downloadx(url, name, i) {
     let fileDataArr = await new Promise(async function (resolve, reject) {
