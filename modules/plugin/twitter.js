@@ -122,8 +122,8 @@ function firstConnect() {
         } else {
             getGuestToken();
             setTimeout(() => getCookie(), 1000); //cookie有时间限制
-            //let get_cookie_routine = setInterval(() => getCookie(), 20 * 60 * 60 * 1000);
-            //let get_gt_routine = setInterval(() => getGuestToken(), 0.9 * 60 * 60 * 1000);
+            let get_cookie_routine = setInterval(() => getCookie(), 20 * 60 * 60 * 1000);
+            let get_gt_routine = setInterval(() => getGuestToken(), 0.9 * 60 * 60 * 1000);
         }
     });
 }
@@ -138,7 +138,7 @@ function sizeCheck(url) {
     }).then(res => {
         return parseInt(res.headers["content-length"]) < MAX_SIZE ? true : false;
     }).catch(err => {
-        logger2.error(new Date().toString() + ",推特0：" + url + "," + err.response.status);
+        logger2.error(new Date().toString() + ",推特0：" + url + "," + err);
         return false;
     });
 }
@@ -179,6 +179,7 @@ function getGuestToken() {
         proxy: proxy2,
         timeout: 10000
     }).then(res => {
+        logger2.info("获取一个Guest Token:" + res.data.guest_token);
         guest_token = res.data.guest_token;
     }).catch(err => logger2.info(new Date().toString() + ",推特1：" + err.response.data))
 }
@@ -210,6 +211,7 @@ function getCookie() {
                 else if (temp = /(_twitter_sess=.+?);/.exec(res.headers["set-cookie"][i])) twitter_sess = temp[1];
             }
             cookie = `dnt=1; fm=0; csrf_same_site_set=1; csrf_same_site=1; gt=${guest_token}; ${ct0}${guest_id}${personalization_id}${twitter_sess}`;
+            logger2.info("获取一个cookie:" + cookie);
         }) //.catch(err => logger2.error(new Date().toString() + ",twitter cookie设置出错，错误：" + err.response.status + "," + err.response.statusText));
         .catch(err => logger2.error(new Date().toString() + ",twitter cookie设置出错，错误：" + err));
 }
@@ -495,16 +497,23 @@ function checkTwiTimeline() {
                             let current_id = tweet_list[0].id_str;
                             if (current_id > last_tweet_id) {
                                 let groups = subscribes[i].groups;
+                                let ii = 1;
                                 for (let tweet of tweet_list) {
-                                    if (tweet.id_str > last_tweet_id) {
+                                    if (tweet.id_str > last_tweet_id) { //每一个推，一次发完所有订阅的群，直到所有推特发完
                                         groups.forEach(group_id => {
                                             if (checkOption(tweet, subscribes[i][group_id])) {
                                                 format(tweet, subscribes[i].uid).then(payload => {
+                                                    payload += ii + "\n";
                                                     payload += `\nhttps://twitter.com/${tweet.user.screen_name}/status/${tweet.id_str}`
                                                     replyFunc({
                                                         group_id: group_id,
                                                         message_type: "group"
                                                     }, payload);
+                                                    replyFunc({
+                                                        group_id: group_id,
+                                                        message_type: "group"
+                                                    }, ii + `, https://twitter.com/${tweet.user.screen_name}/status/${tweet.id_str}`);
+                                                    ii++;
                                                 }).catch(err => logger2.error(new Date().toString() + ",推特6：" + err));
                                             }
                                         });
