@@ -16,9 +16,18 @@ const wecab = new node_localStorage2('./wecab'); //插件是否连上机器人
 const dayjs = require('dayjs');
 const downloadx = require('../Downloadx'); //输入url，返回文件路径
 const ClearDownloadx = require('../ClearDownloadx') //删除文件
+const NodeCache = require('node-cache');
 
 const config = require('../config');
 //console.log(config);
+//针对用户qq号的延时
+const cache = new NodeCache({
+    stdTTL: 1 * 5
+});
+//针对qq群的延时
+const cache2 = new NodeCache({
+    stdTTL: 1 * 5
+});
 const PROXY_CONF = config.default.proxy; //发现套了一个default。。！
 const DB_PORT = 27017;
 const DB_PATH = "mongodb://127.0.0.1:" + DB_PORT;
@@ -262,7 +271,7 @@ function getUserTimeline(user_id, count = 2, include_rt = false, exclude_rp = tr
             "exclude_replies": exclude_rp,
             "include_rts": include_rt,
             "tweet_mode": "extended",
-            since_id : since_id
+            since_id: since_id
         },
         //是否启用代理访问推特
         proxy: proxy2,
@@ -841,6 +850,22 @@ async function addSubByName(name, option_nl, context) {
 }
 
 function twitterAggr(context) {
+    let gid = context.group_id;
+    let uid = context.user_id;
+    if (context.user_id != null) {
+        const cacheKeys = [`${uid}`]; //防止单个QQ快速刷回复
+        if (cacheKeys.some(key => cache.has(key))) {
+            return;
+        }
+        [uid].forEach((id, i) => id && cache.set(cacheKeys[i], true));
+    }
+    if (context.group_id != null) {
+        let cacheKeys = [`${gid}`]; //防止这个群快速刷回复 
+        if (cacheKeys.some(key => cache2.has(key))) {
+            return;
+        }
+        [gid].forEach((id, i) => id && cache2.set(cacheKeys[i], true));
+    }
     if (connection && /^看看(.+?)的?((第[0-9]?[一二三四五六七八九]?条)|(上*条)|(最新))?\s?(推特|twitter)$/i.test(context.message)) {
         let num = 1;
         let name = "";
