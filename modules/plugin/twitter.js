@@ -491,15 +491,16 @@ function checkTwiTimeline() {
                 }
                 setTimeout(async () => {
                     try {
+                        let ii = 1;
                         let tweet_list = await getUserTimeline(subscribes[i].uid, 10, true, false);
                         if (tweet_list != undefined) {
                             let last_tweet_id = subscribes[i].tweet_id; //最新一条推特id
                             let current_id = tweet_list[0].id_str;
                             if (current_id > last_tweet_id) {
                                 let groups = subscribes[i].groups;
-                                let ii = 1;
                                 for (let tweet of tweet_list) {
                                     if (tweet.id_str > last_tweet_id) { //每一个推，一次发完所有订阅的群，直到所有推特发完
+                                        ii = 1;
                                         groups.forEach(group_id => {
                                             if (checkOption(tweet, subscribes[i][group_id])) {
                                                 format(tweet, subscribes[i].uid).then(payload => {
@@ -690,8 +691,10 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false)
                         //src = [media[i].media_url_https.substring(0, media[i].media_url_https.length - 4), '?format=jpg&name=4096x4096'].join("");
                         src = [media[i].media_url_https.substring(0, media[i].media_url_https.length - 4), (media[i].media_url_https.search("jpg") != -1 ? '?format=jpg&name=orig' : '?format=png&name=orig')].join(""); //?format=png&name=orig 可能出现这种情况
                         pics += await sizeCheck(src) ? `[CQ:image,cache=0,file=file:///${await downloadx(src,"photo",i)}]` : `[CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https,"photo",i)}] 注：这不是原图`;
+                        logger2.info("src:" + src + " , media[i].media_url_https:" + media[i].media_url_https);
                     } else if (media[i].type == "animated_gif") {
                         try {
+                            logger2.info("media[i].video_info.variants[0].url:" + media[i].video_info.variants[0].url);
                             await exec(`ffmpeg -i ${await downloadx(media[i].video_info.variants[0].url,"animated_gif",i)} -loop 0 -y ${__dirname}/temp.gif`)
                                 .then(async ({
                                     stdout,
@@ -713,6 +716,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false)
                             logger2.error(new Date().toString() + ",推特动图：" + err);
                             pics += `这是一张动图 [CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https,"animated_gif",i)}]` + `动起来看这里${media[i].video_info.variants[0].url}`;
                         }
+                        logger2.info("media[i].media_url_https:" + media[i].media_url_https);
                     } else if (media[i].type == "video") {
                         let mp4obj = [];
                         for (let j = 0; j < media[i].video_info.variants.length; j++) {
@@ -721,6 +725,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false)
                         mp4obj.sort((a, b) => {
                             return b.bitrate - a.bitrate;
                         });
+                        logger2.info("media[i].media_url_https:" + media[i].media_url_https);
                         payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https)}]`,
                             `视频地址: ${mp4obj[0].url}`);
                     }
@@ -744,6 +749,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false)
         if (/poll\dchoice/.test(tweet.card.name)) {
             let i = 0;
             if ("image_large" in tweet.card.binding_values) {
+                logger2.info("tweet.card.binding_values.image_large.url:" + tweet.card.binding_values.image_large.url);
                 payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.image_large.url,"image_large",i)}]`);
                 i++;
             }
@@ -774,8 +780,12 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false)
         } else if (/summary/.test(tweet.card.name)) {
             if ("photo_image_full_size_original" in tweet.card.binding_values) {
                 if (sizeCheck(tweet.card.binding_values.photo_image_full_size_original.image_value.url)) {
+                    logger2.info("tweet.card.binding_values.photo_image_full_size_original.image_value.url:" + tweet.card.binding_values.photo_image_full_size_original.image_value.url);
                     payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.photo_image_full_size_original.image_value.url,"photo_image_full",ii)}]`);
-                } else payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.photo_image_full_size_large.image_value.url,"photo_image_full",ii)}]`);
+                } else {
+                    logger2.info("tweet.card.binding_values.photo_image_full_size_large.image_value.url:" + tweet.card.binding_values.photo_image_full_size_large.image_value.url);
+                    payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.photo_image_full_size_large.image_value.url,"photo_image_full",ii)}]`);
+                }
                 ii++;
             }
             payload.push(tweet.card.binding_values.title.string_value, tweet.card.binding_values.description.string_value);
