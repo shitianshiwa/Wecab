@@ -192,7 +192,7 @@ function dynamicProcess(dynamic, origin = false, dynamic_url = null) {
         switch (dynamic.desc.type) {
             case 64: {
                 text = `发布专栏：${card.title}\n${card.summary}`;
-                pics = `[CQ:image,cache=0,file=${card.banner_url || card.image_urls[0]}`;
+                pics = `[CQ:image,cache=0,file=${card.banner_url || card.image_urls[0]}]`;
             }
         }
     }
