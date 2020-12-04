@@ -491,7 +491,7 @@ function checkTwiTimeline() {
                 }
                 setTimeout(async () => {
                     try {
-                        let ii = 1;
+                        let ii = new Array();
                         let tweet_list = await getUserTimeline(subscribes[i].uid, 10, true, false);
                         if (tweet_list != undefined) {
                             let last_tweet_id = subscribes[i].tweet_id; //最新一条推特id
@@ -500,11 +500,13 @@ function checkTwiTimeline() {
                                 let groups = subscribes[i].groups;
                                 for (let tweet of tweet_list) {
                                     if (tweet.id_str > last_tweet_id) { //每一个推，一次发完所有订阅的群，直到所有推特发完
-                                        ii = 1;
                                         groups.forEach(group_id => {
+                                            if (ii[group_id] == undefined) {
+                                                ii[group_id] = 1;
+                                            }
                                             if (checkOption(tweet, subscribes[i][group_id])) {
                                                 format(tweet, subscribes[i].uid).then(payload => {
-                                                    payload = ii + "\n" + payload;
+                                                    payload = ii[group_id] + "\n" + payload;
                                                     payload += `\nhttps://twitter.com/${tweet.user.screen_name}/status/${tweet.id_str}`
                                                     replyFunc({
                                                         group_id: group_id,
@@ -513,8 +515,8 @@ function checkTwiTimeline() {
                                                     replyFunc({
                                                         group_id: group_id,
                                                         message_type: "group"
-                                                    }, ii + `, https://twitter.com/${tweet.user.screen_name}/status/${tweet.id_str}`);
-                                                    ii++;
+                                                    }, ii[group_id] + `, https://twitter.com/${tweet.user.screen_name}/status/${tweet.id_str}`);
+                                                    ii[group_id] = ii[group_id] + 1;
                                                 }).catch(err => logger2.error(new Date().toString() + ",推特6：" + err));
                                             }
                                         });
