@@ -728,7 +728,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false)
                             return b.bitrate - a.bitrate;
                         });
                         logger2.info("media[i].media_url_https:" + media[i].media_url_https);
-                        payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https)}]`,
+                        payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https,"video",i)}]`,
                             `视频地址: ${mp4obj[0].url}`);
                     }
                 }
