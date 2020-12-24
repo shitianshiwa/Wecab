@@ -108,11 +108,17 @@ function checkConnection() {
         method: "GET",
         url: "https://twitter.com",
         //是否启用代理访问推特
+        headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36"
+        },
         proxy: proxy2,
         timeout: 10000
     }).then(res => {
         connection = (res.status == 200) ? true : false
-    }).catch(err => connection = false);
+    }).catch(err => {
+        logger2.error(new Date().toString() + ",Twitter checkConnection error with" + " , " + err.response.status + " , " + err.response.statusText);
+        return false;
+    });
 }
 
 function firstConnect() {
@@ -155,7 +161,7 @@ function httpHeader() {
         "sec-fetch-user": "?1",
         "sec-fetch-site": "same-site",
         "upgrade-insecure-requests": "1",
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36",
         "accept": "application/json, text/plain, */*",
         "dnt": "1",
         // "accept-encoding" : "gzip, deflate, br",
