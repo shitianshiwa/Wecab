@@ -1,33 +1,61 @@
 const canvas = require('canvas');
 const logger2 = require('../logger2'); //日志功能
-
+canvas.registerFont('simhei.ttf', {
+    family: 'SimHei'
+});
+const context = canvas.createCanvas(1, 1).getContext("2d");
+context.font = "400 32px SimHei";
 async function counterfeit(context, replyFunc, bot) {
     try {
-        if (context.message.length > 200) {
-            replyFunc(context, "文字内容超过200字符");
+        if (context.message.length > 500) {
+            replyFunc(context, "文字内容超过500字符");
             return true;
-        } else if (/\[CQ:image/.test(context.message) || /\[CQ:face/.test(context.message)) {
-            replyFunc(context, "暂不支持插入图片或者表情");
+        } else if ( /*/\[CQ:image/.test(context.message) || */ /\[CQ:face/.test(context.message)) {
+            replyFunc(context, "暂不支持插入表情");
             return true;
         }
-        let user_id = context.user_id; ///\[CQ:at,qq=(\d+)\]/.exec(context.message);
-        if (!user_id) throw 1;
-        //else user_id = user_id[1];
-        const member_info = context.sender;
-        /*await bot("get_group_member_info", {不能获取自己QQ的信息 { data: null, retcode: 102, status: 'failed' }
-               user_id: user_id,
-               group_id: context.group_id,
-           });*/
-        //console.log(member_info);
-        //if (!member_info || member_info.status != "ok") throw 1;
-        let name = member_info.card ? member_info.card : member_info.nickname;
-        if (!name) throw 2;
-        if (name.length > 16) name = name.substring(0, 16) + "...";
-        let message = context.message.substr(4);
+        let user_id = context.user_id; //发消息的qq
+        let other_id = /\[CQ:at,qq=(\d+)\]/.exec(context.message); //at别人的qq
+        if (other_id != null) {
+            other_id = other_id[1]; //得到别人的qq
+        }
+        let member_info = context.sender;
+        let hasimg = false;
+        let member_info2 = null;
+        let name = null; //昵称
+        if (other_id == null) {
+            //console.log(member_info);
+            name = member_info.card ? member_info.card : member_info.nickname;
+        } else {
+            //console.log(other_id);
+            member_info2 = await bot("get_group_member_info", { //不能获取自己QQ的信息 { data: null, retcode: 102, status: 'failed' }
+                user_id: other_id,
+                group_id: context.group_id,
+            });
+            //console.log(member_info2);
+            if (!member_info2 || member_info2.status != "ok") throw 3;
+            name = member_info2.data.card ? member_info2.data.card : member_info2.data.nickname;
+            user_id = other_id; //有at别人就用别人的qq号替换自己qq号
+        }
+        if (!name) throw 4;
+        if (name.length > 25) name = name.substring(0, 25) + "..."; //限制昵称长度
+        let message = context.message.substr(4); //排除最开头的4个字符
         //console.log(message);
-        if (!message) throw 3;
-        //else message = message[1];
-        message = message.replace(/\r\n/g, "<br>").split("<br>");
+        if (!message) throw 5;
+        if (hasImage(message) == true) { //判断有没有图片
+            hasimg = true;
+        }
+        let imgurl = getImgs(message); //获取图片链接
+        if (imgurl.length > 1) {
+            replyFunc(context, "只能插入一张图片");
+            return true;
+        }
+        //message = message.replace(/\[CQ\:image.*?\]/g, "");
+        //message = message.replace(/\[CQ\:at.*?\]/g, "");
+        message = message.replace(/\[CQ\:.*?\]/g, ""); //清除所有cq码
+        if (message == "") {
+            message = " ";
+        }
         /*const raw = await canvas.loadImage(`${__dirname}/qq_chat.jpg`);
         const base = canvas.createCanvas(raw.width, raw.height);
         let ctx = base.getContext("2d");
@@ -37,7 +65,7 @@ async function counterfeit(context, replyFunc, bot) {
         //else message = message.filter((noEmpty) => {
         //    return noEmpty != undefined
         //})[1];
-        //分行
+        message = getshorttest(message.replace(/\r\n/g, "\n")).replace(/\n/g, "<br>").split("<br>"); //指定长度换行+切割字符串
         let len_list = [];
         for (let i in message) {
             let lines = [];
@@ -57,26 +85,29 @@ async function counterfeit(context, replyFunc, bot) {
             message[i] = lines;
         }
         message = message.flat();
-
         // 背景
         const longest = 16 * Math.max(...len_list);
         const text_width = longest + 130 + 100;
         const name_width = name.length * 21 + 135;
         let width = text_width > name_width ? text_width : name_width;
         if (width > 830) width = 830;
-        const height = 145 + 35 * message.length;
+        let height = 145 + 35 * message.length + 50;
 
-        const base = canvas.createCanvas(width, height);
+        if (hasimg == true) {
+            width = width + 100;
+            height = height + 200;
+        }
+        const base = canvas.createCanvas(width + 50, height);
         let ctx = base.getContext("2d");
         ctx.fillStyle = "#ECECF6";
-        ctx.fillRect(0, 0, width, height);
+        ctx.fillRect(0, 0, width + 50, height);
 
         // 画气泡
         const bubble = {
             x: 130,
             y: 78,
-            width: longest + 42,
-            height: 35 * message.length + 42,
+            width: hasimg == true ? (longest <= 220 ? 250 : longest + 50) : longest + 100,
+            height: hasimg == true ? (35 * message.length > 252 ? 35 * message.length + 252 : 340) : 35 * message.length + 100,
             r: 30
         };
         ctx.beginPath();
@@ -97,7 +128,8 @@ async function counterfeit(context, replyFunc, bot) {
         // 填充文字
         ctx.fillStyle = "#000000";
         ctx.font = "400 32px SimHei";
-        ctx.fillText(message.join("\n"), 150, 127);
+        message = getshorttest(message.join("\n"));
+        ctx.fillText(message, 148, 128);
 
         // 填充头像
         let head = await canvas.loadImage(`http://q1.qlogo.cn/g?b=qq&s=100&nk=${user_id}`);
@@ -115,6 +147,13 @@ async function counterfeit(context, replyFunc, bot) {
         head_ctx.drawImage(head, 0, 0, 89, 89);
         ctx.drawImage(head_ctx.canvas, 29, 29, 89, 89);
 
+        //填充图片
+        if (imgurl.length == 1) {
+            let pic = await canvas.loadImage(imgurl[0].url);
+            if (!pic) throw 1;
+            ctx.drawImage(pic, 148, 128 + getTextHeigth(message), 200, 200);
+        }
+
         // 出图
         const img64 = base.toBuffer("image/jpeg", {
             quality: 1
@@ -128,9 +167,110 @@ async function counterfeit(context, replyFunc, bot) {
 }
 
 function deal(context, replyFunc, bot) {
-    if (/合成文本/.test(context.message)) {
+    if (/^合成文本.*/.test(context.message)) {
         counterfeit(context, replyFunc, bot)
     } else return false;
+}
+
+function getshorttest(text) {
+    let len = 20;
+    let temp,
+        temp2 = "",
+        temp3 = 0;
+    text = text.replace(/\n/g, "");
+    text = text.split("\n");
+    let i, i2, i3, i4, i5;
+    for (i = 0; i < text.length; i++) {
+        temp = "";
+        i4 = len; //一行60字
+        i5 = 0; //切割字符串初始位置
+        if (text[i].length > len) {
+            for (i2 = 0; i2 < parseInt(text[i].length / len); i2++) { //判断切割几次字符串`
+                temp3 = text[i].length - (text[i].length - i4);
+                //console.log(text[i].length + " ,temp3:" + temp3)
+                for (i3 = i5; i3 < temp3; i3++) { //获取指定分段字符串
+                    temp = temp + text[i][i3];
+                }
+                temp += "\n"; //增加换行
+                i5 = i4; //切割开头
+                i4 += len; //切割结尾
+            }
+            for (i3 = len * parseInt(text[i].length / len); i3 < text[i].length; i3++) { //补上最后一部分字符串，解决丢失
+                temp = temp + text[i][i3];
+            }
+            temp += "\n"; //增加换行
+        } else {
+            temp = text[i] + "\n";
+        }
+        temp2 += temp;
+    }
+    return temp2;
+}
+
+/**
+ * https://blog.csdn.net/u012860063/article/details/53105658
+ * JS 计算任意字符串宽度
+ * Uses canvas.measureText to compute and return the width of the given text of given font in pixels.
+ * 
+ * @param {String} text The text to be rendered.
+ * 
+ * @see https://stackoverflow.com/questions/118241/calculate-text-width-with-javascript/21015393#21015393
+ */
+function getTextWidth(text) {
+    return context.measureText(text).width + 100;
+}
+
+/**
+ * JS 计算任意字符串大致高度
+ * @param {String} text The text to be rendered.
+ * 
+ */
+function getTextHeigth(text) {
+    let jishu = 0;
+    for (let i = 0; i < text.length; i++) {
+        if (text[i] == "\n") {
+            jishu++; //计算多少行
+        }
+    }
+    return 30 * jishu;
+}
+
+
+
+
+/**
+ * 从消息中提取图片
+ *
+ * @param {string} msg
+ * @returns 图片URL数组
+ */
+function getImgs(msg) {
+    const reg = /\[CQ:image,file=([^,]+),url=([^\]]+)\]/g;
+    const result = [];
+    /*if(msg.search("  ")!=-1)
+    {
+        Logger.info("可能是替身搜图？");
+        return result;//尝试解决"替身"搜图 回复AT机器人的消息搜图
+    }*/
+    let search = reg.exec(msg);
+    while (search) {
+        result.push({
+            file: search[1],
+            url: search[2],
+        });
+        search = reg.exec(msg);
+    }
+    return result;
+}
+
+/**
+ * 判断消息是否有图片
+ *
+ * @param {string} msg 消息
+ * @returns 有则返回true
+ */
+function hasImage(msg) {
+    return msg.indexOf('[CQ:image') !== -1;
 }
 
 module.exports = {
