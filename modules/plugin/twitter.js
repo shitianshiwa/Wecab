@@ -116,7 +116,11 @@ function checkConnection() {
     }).then(res => {
         connection = (res.status == 200) ? true : false
     }).catch(err => {
-        logger2.error(new Date().toString() + ",Twitter checkConnection error with" + " , " + err.response.status + " , " + err.response.statusText);
+        try {
+            logger2.error(new Date().toString() + ",Twitter checkConnection error with" + " , " + JSON.stringify(err));
+        } catch (error) {
+            logger2.error(new Date().toString() + ",Twitter checkConnection error with" + " , " + err);
+        }
         return false;
     });
 }
@@ -128,8 +132,8 @@ function firstConnect() {
         } else {
             getGuestToken();
             setTimeout(() => getCookie(), 1000); //cookie有时间限制
-            let get_cookie_routine = setInterval(() => getCookie(), 20 * 60 * 60 * 1000);
-            let get_gt_routine = setInterval(() => getGuestToken(), 0.9 * 60 * 60 * 1000);
+            let get_cookie_routine = setInterval(() => getCookie(), 12 * 60 * 60 * 1000);
+            let get_gt_routine = setInterval(() => getGuestToken(), 0.8 * 60 * 60 * 1000);
         }
     });
 }
@@ -187,7 +191,13 @@ function getGuestToken() {
     }).then(res => {
         logger2.info("获取一个Guest Token:" + res.data.guest_token);
         guest_token = res.data.guest_token;
-    }).catch(err => logger2.info(new Date().toString() + ",推特1：" + err.response.data))
+    }).catch(err => {
+        try {
+            logger2.info(new Date().toString() + ",推特1：" + JSON.stringify(err))
+        } catch (error) {
+            logger2.info(new Date().toString() + ",推特1：" + err);
+        }
+    })
 }
 
 /** 获取一个cookie，后面要用*/
@@ -251,6 +261,23 @@ function getSingleTweet(tweet_id_str) {
         proxy: proxy2,
         timeout: 10000
     }).then(res => {
+        /**
+        rate-limit
+rate-limit 限制了用户在一定时间内请求的次数，并且会在相对时间后重置，在twitter，这个时间是15分钟。
+
+根据上文我们可以知道twitter是通过x-guest-token判断rate-limit的，在用户的每次请求所返回的header上都会有以下内容
+
+x-rate-limit-limit: 180
+x-rate-limit-remaining: 179
+x-rate-limit-reset: 1567401449
+很好理解对吧，https://api.twitter.com/1.1/application/rate_limit_status.json 这个文件详细说明了各个api的rate-limit。
+
+不要以为你刷新了 guest-token 就不会受到限制，那只是说明你的请求还不够多
+https://blog.ailand.date/2020/02/26/how-to-crawl-twitter/
+         */
+        logger2.info("getSingleTweet/x-rate-limit-limit: " + res.headers["x-rate-limit-limit"]);
+        logger2.info("getSingleTweet/x-rate-limit-remaining: " + res.headers["x-rate-limit-remaining"]);
+        logger2.info("getSingleTweet/x-rate-limit-reset: " + res.headers["x-rate-limit-reset"]);
         return res.data;
     }).catch(err => {
         logger2.error(new Date().toString() + ",推特2：" + JSON.stringify(err.response.data));
@@ -285,6 +312,9 @@ function getUserTimeline(user_id, count = 2, include_rt = false, exclude_rp = tr
         proxy: proxy2,
         timeout: 10000
     }).then(res => {
+        logger2.info("getUserTimeline/x-rate-limit-limit: " + res.headers["x-rate-limit-limit"]);
+        logger2.info("getUserTimeline/x-rate-limit-remaining: " + res.headers["x-rate-limit-remaining"]);
+        logger2.info("getUserTimeline/x-rate-limit-reset: " + res.headers["x-rate-limit-reset"]);
         return res.data;
     }).catch(err => {
         logger2.error(new Date().toString() + ",推特3：" + JSON.stringify(err.response.data));
@@ -316,9 +346,12 @@ function searchUser(name) {
         proxy: proxy2,
         timeout: 10000
     }).then(res => {
+        logger2.info("searchUser/x-rate-limit-limit: " + res.headers["x-rate-limit-limit"]);
+        logger2.info("searchUser/x-rate-limit-remaining: " + res.headers["x-rate-limit-remaining"]);
+        logger2.info("searchUser/x-rate-limit-reset: " + res.headers["x-rate-limit-reset"]);
         return res.data[0]
     }).catch(err => {
-        logger2.info(new Date().toString() + ",Twitter searchUser error：" + err.response.data);
+        logger2.info(new Date().toString() + ",Twitter searchUser error：" + JSON.stringify(err.response.data));
         return false;
     })
 }
