@@ -286,8 +286,8 @@ function groupMsg(e, context) {
         twitter.twitterAggr(context);
     }
     if (weibo.weiboAggr(context, replyMsg) || weibo.antiweibo(context, replyMsg) ||
-        bilibili.bilibiliCheck(context) || translate.transEntry(context)/* ||
-        iHaveAfriend.deal(context, replyMsg, bot) *//*iHaveAfriend可以直接让后面的条件失效*/
+        bilibili.bilibiliCheck(context) || translate.transEntry(context) ||
+        iHaveAfriend.deal(context, replyMsg, bot) /*iHaveAfriend可以直接让后面的条件失效*/
         /*pixivImage.pixivCheck(context, replyMsg, bot) ||*/
         /*helpZen(context, replyMsg, bot, rand) ||*/
         /*||
@@ -375,11 +375,11 @@ function getTime() {
 function parseArgs(str, enableArray = false, _key = null) {
     const m = minimist(
         str
-        .replace(/(--\w+)(?:\s*)(\[CQ:)/g, '$1 $2')
-        .replace(/(\[CQ:[^\]]+\])(?:\s*)(--\w+)/g, '$1 $2')
-        .split(' '), {
-            boolean: true,
-        }
+            .replace(/(--\w+)(?:\s*)(\[CQ:)/g, '$1 $2')
+            .replace(/(\[CQ:[^\]]+\])(?:\s*)(--\w+)/g, '$1 $2')
+            .split(' '), {
+        boolean: true,
+    }
     );
     if (!enableArray) {
         for (const key in m) {
