@@ -1,17 +1,28 @@
 const logger2 = require('../logger2'); //日志功能
-const axios = require("axios");
+//const axios = require("axios");
+const axios = require('axios-https-proxy-fix');
+//const PROXY_CONF = config.default.proxy; //发现套了一个default。。！
 
 const TENCENT_TRANS_INIT = "https://fanyi.qq.com/";
 const TENCENT_TRANS_API = "https://fanyi.qq.com/api/translate";
-const REAAUTH_URL = "https://fanyi.qq.com/api/reaauth";
-const TRACKER_URL = "https://tracker.appadhoc.com/tracker";
-const appKey = "ADHOC_5ec05c69-a3e4-4f5e-b281-d339b3774a2f";
+const REAAUTH_URL = "https://fanyi.qq.com/api/aaa123";//reaauth
+//const TRACKER_URL = "https://tracker.appadhoc.com/tracker";
+//const appKey = "ADHOC_5ec05c69-a3e4-4f5e-b281-d339b3774a2f";
 
 let qtv = "";
 let qtk = "";
 let fy_guid = "";
 let target = {};
-let replyFunc = (context, msg, at = false) => {};
+let replyFunc = (context, msg, at = false) => { };
+var proxy2 = false;
+let timer = null;
+let reaauth2 = 3;
+/*if (PROXY_CONF.host.length > 0 && PROXY_CONF.port !== 0) {
+    proxy2 = {
+        host: PROXY_CONF.host,
+        port: PROXY_CONF.port
+    }
+}*/
 
 function transReply(replyMsg) {
     replyFunc = replyMsg;
@@ -43,15 +54,28 @@ function initialise() {
     axios({
         url: TENCENT_TRANS_INIT,
         method: "GET",
+        proxy: proxy2,
         headers: httpHeader()
     }).then(res => {
+        logger2.info("腾讯翻译1:\n" + JSON.stringify(res.headers));
         fy_guid = /fy_guid=(.+?); /.exec(res.headers["set-cookie"])[1];
-        reaauth(false);
+        reaauth(false);//首次params参数为""
 
         // 最大1分钟
-        setInterval(reaauth, 45 * 1000);
+        if (timer == null) {
+            timer = setInterval(reaauth, 45 * 1000);//每45s运行一次
+        }
+        else {
+            clearInterval(timer);
+            timer = null;
+            timer = setInterval(reaauth, 45 * 1000);
+        }
     }).catch(err => {
-        //logger2.error(new Date().toString() + " , " + JSON.stringify(err));
+        try {
+            logger2.error(new Date().toString() + " ,腾讯翻译1： " + JSON.stringify(err));
+        } catch (error) {
+            logger2.error(new Date().toString() + " ,腾讯翻译1： " + err);
+        }
         setTimeout(initialise, 5000);
     });
 }
@@ -60,17 +84,29 @@ function reaauth(qt = true) {
     axios({
         url: REAAUTH_URL,
         method: "POST",
+        proxy: proxy2,
         headers: httpHeader(),
         params: qt ? {
             qtv: qtv,
             qtk: qtk
-        } : ""
+        } : ""//首次params参数为""
     }).then(res => {
+        logger2.info("腾讯翻译2:\n" + JSON.stringify(res.data));
         qtv = res.data.qtv;
         qtk = res.data.qtk;
+        reaauth2 = 3;
     }).catch(err => {
-        //logger2.error(new Date().toString() + " , " + JSON.stringify(err));
-        setTimeout(reaauth, 1000);
+        try {
+            logger2.error(new Date().toString() + " ,腾讯翻译2： " + JSON.stringify(err));
+        } catch (error) {
+            logger2.error(new Date().toString() + " ,腾讯翻译2： " + err);
+        }
+        if (qt == true) {
+            if (reaauth2 >= 0) {
+                setTimeout(reaauth, 1000);
+                reaauth2 = reaauth2 - 1;
+            }
+        }
     });
 }
 
@@ -91,6 +127,7 @@ function translate(sourceLang, targetLang, sourceText) {
     return axios({
         url: TENCENT_TRANS_API,
         method: "POST",
+        proxy: proxy2,
         headers: httpHeader(true),
         data: {
             "qtk": qtk,
@@ -100,13 +137,19 @@ function translate(sourceLang, targetLang, sourceText) {
             "sourceText": unescape(temp)
         }
     }).then(res => {
+        //logger2.info("腾讯翻译3:\n" + JSON.stringify(res.data));
         let targetText = "";
         for (let i in res.data.translate.records) {
             targetText += unescape(res.data.translate.records[i].targetText);
         }
+        logger2.info("腾讯翻译3:\n" + targetText);
         return targetText;
     }).catch(err => {
-        logger2.error(new Date().toString() + " , " + err.errno + " , " + err.code);
+        try {
+            logger2.error(new Date().toString() + " ,腾讯翻译3: " + JSON.stringify(err));
+        } catch (error) {
+            logger2.error(new Date().toString() + " ,腾讯翻译3: " + err);
+        }
     });
 }
 
@@ -124,8 +167,8 @@ function toTargetLang(lang_opt) {
 
 function orientedTrans(context) {
     if (target[context.group_id] != undefined && target[context.group_id].some(aim => {
-            return aim == context.user_id
-        })) {
+        return aim == context.user_id
+    })) {
         if (/(开始|停止)定向翻译|停止全部翻译|定向翻译列表/.test(context.message)) return;
         let text = context.message.replace(/\[CQ.+\]/, "");
         if (text.length < 3) return;
@@ -203,7 +246,7 @@ function transEntry(context) {
 }
 
 initialise();
-let renewToken = setInterval(initialise, 3600000);
+let renewToken = setInterval(initialise, 3600 * 1000);//一小时
 
 module.exports = {
     transReply,
