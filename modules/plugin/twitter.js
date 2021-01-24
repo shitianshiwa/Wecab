@@ -774,7 +774,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false)
                         });
                         logger2.info("media[i].media_url_https:" + media[i].media_url_https);
                         let temp = await downloadx(media[i].media_url_https, "video", i);
-                        video3 = `[CQ:video,cache=0,file=file:///${await downloadx(mp4obj[0].url, "video2", i)},cover=file:///${temp},c=3]}`;
+                        video3 = `[CQ:video,cache=0,file=file:///${await downloadx(mp4obj[0].url, "video2", i)},cover=file:///${temp},c=3]`;
                         payload.push(`[CQ:image,cache=0,file=file:///${temp}]`,
                             `视频地址: ${mp4obj[0].url}`);
 
