@@ -18,7 +18,7 @@ const downloadx = require('../Downloadx'); //输入url，返回文件路径
 const ClearDownloadx = require('../ClearDownloadx') //删除文件
 const NodeCache = require('node-cache');
 const translate = require('./translate');
-
+//https://www.npmjs.com/package/level
 const config = require('../config');
 //console.log(config);
 //针对用户qq号的延时
@@ -263,8 +263,8 @@ function getSingleTweet(tweet_id_str) {
         proxy: proxy2,
         timeout: 10000
     }).then(res => {
-         /**
-        rate-limit
+        /**
+       rate-limit
 rate-limit 限制了用户在一定时间内请求的次数，并且会在相对时间后重置，在twitter，这个时间是15分钟。
 根据上文我们可以知道twitter是通过x-guest-token判断rate-limit的，在用户的每次请求所返回的header上都会有以下内容
 x-rate-limit-limit: 180
@@ -273,7 +273,7 @@ x-rate-limit-reset: 1567401449
 很好理解对吧，https://api.twitter.com/1.1/application/rate_limit_status.json 这个文件详细说明了各个api的rate-limit。
 不要以为你刷新了 guest-token 就不会受到限制，那只是说明你的请求还不够多
 https://blog.ailand.date/2020/02/26/how-to-crawl-twitter/
-         */
+        */
         logger2.info("getSingleTweet/x-rate-limit-limit: " + res.headers["x-rate-limit-limit"]);
         logger2.info("getSingleTweet/x-rate-limit-remaining: " + res.headers["x-rate-limit-remaining"]);
         logger2.info("getSingleTweet/x-rate-limit-reset: " + res.headers["x-rate-limit-reset"]);
@@ -842,7 +842,8 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false)
         }
     }
     logger2.info("原文：" + text);
-    text = text + "\n腾讯翻译: \n" + await translate.translate("auto", "zh", text);
+    let temp = await translate.translate("auto", "zh", text);
+    text = text + + temp != "" ? "\n腾讯翻译: \n" + temp : "";
     if ("urls" in tweet.entities && tweet.entities.urls.length > 0) {
         for (let i = 0; i < tweet.entities.urls.length; i++) {
             text = text.replace(tweet.entities.urls[i].url, tweet.entities.urls[i].expanded_url);

@@ -57,7 +57,7 @@ function initialise() {
         proxy: proxy2,
         headers: httpHeader()
     }).then(res => {
-        logger2.info("腾讯翻译1:\n" + JSON.stringify(res.headers));
+        //logger2.info("腾讯翻译1:\n" + JSON.stringify(res.headers));
         fy_guid = /fy_guid=(.+?); /.exec(res.headers["set-cookie"])[1];
         reaauth(false);//首次params参数为""
 
@@ -70,6 +70,7 @@ function initialise() {
             timer = null;
             timer = setInterval(reaauth, 45 * 1000);
         }
+        logger2.info("腾讯翻译初始化完成");
     }).catch(err => {
         try {
             logger2.error(new Date().toString() + " ,腾讯翻译1： " + JSON.stringify(err));
@@ -91,7 +92,7 @@ function reaauth(qt = true) {
             qtk: qtk
         } : ""//首次params参数为""
     }).then(res => {
-        logger2.info("腾讯翻译2:\n" + JSON.stringify(res.data));
+        //logger2.info("腾讯翻译2:\n" + JSON.stringify(res.data));
         qtv = res.data.qtv;
         qtk = res.data.qtk;
         reaauth2 = 3;
@@ -149,6 +150,9 @@ function translate(sourceLang, targetLang, sourceText) {
             logger2.error(new Date().toString() + " ,腾讯翻译3: " + JSON.stringify(err));
         } catch (error) {
             logger2.error(new Date().toString() + " ,腾讯翻译3: " + err);
+        }
+        finally {
+            return "";
         }
     });
 }
@@ -235,12 +239,14 @@ function transEntry(context) {
         unpoint(context, user_id);
         return true;
     } else if (/^停止全部翻译$/.test(context.message)) {
-        if (/owner|admin/.test(context.sender.role)) allClear(context);
-        else replyFunc(context, "您配吗");
+        if (!context.sender.role == "member") allClear(context);
+        //if (/owner|admin/.test(context.sender.role)) allClear(context);
+        else replyFunc(context, "无权限");
         return true;
     } else if (/^定向翻译列表$/.test(context.message)) {
-        if (/owner|admin/.test(context.sender.role)) viewTarget(context);
-        else replyFunc(context, "您配吗");
+        if (!context.sender.role == "member") viewTarget(context);
+        //if (/owner|admin/.test(context.sender.role)) viewTarget(context);
+        else replyFunc(context, "无权限");
         return true;
     } else return false;
 }
