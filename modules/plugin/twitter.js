@@ -843,7 +843,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false)
     }
     logger2.info("原文：" + text);
     let temp = await translate.translate("auto", "zh", text);
-    text = text + + temp != "" ? "\n腾讯翻译: \n" + temp : "";
+    text = text + (temp != "" ? "\n腾讯翻译: \n" + temp : "");
     if ("urls" in tweet.entities && tweet.entities.urls.length > 0) {
         for (let i = 0; i < tweet.entities.urls.length; i++) {
             text = text.replace(tweet.entities.urls[i].url, tweet.entities.urls[i].expanded_url);
