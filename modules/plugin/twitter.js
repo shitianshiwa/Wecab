@@ -279,6 +279,7 @@ https://blog.ailand.date/2020/02/26/how-to-crawl-twitter/
         logger2.info("getSingleTweet/x-rate-limit-limit: " + res.headers["x-rate-limit-limit"]);
         logger2.info("getSingleTweet/x-rate-limit-remaining: " + res.headers["x-rate-limit-remaining"]);
         logger2.info("getSingleTweet/x-rate-limit-reset: " + res.headers["x-rate-limit-reset"]);
+        //logger2.info(JSON.stringify(res.data));
         return res.data;
     }).catch(err => {
         logger2.error(new Date().toString() + ",推特2：" + JSON.stringify(err.response.data));
@@ -858,7 +859,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false)
             text = text.replace(tweet.entities.urls[i].url, tweet.entities.urls[i].expanded_url);
         }
     }
-    payload.unshift(`${tweet.user.name}${useruid != -1 & retweeted == false ? "(推特用户id：" + useruid + ")的twitter\n更新了" : ""}`, text);
+    payload.unshift(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.user.profile_image_url_https.replace("_normal","_bigger"), "headpic", 0)}]\n${tweet.user.name}${useruid != -1 & retweeted == false ? "(推特用户id：" + useruid + ")的twitter\n更新了" : ""}`, text);
     return payload.join("\n");
 }
 
