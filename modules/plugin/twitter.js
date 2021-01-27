@@ -49,7 +49,9 @@ const OPTION_MAP = {
 let guest_token = "";
 let cookie = "";
 let connection = true;
-let video3 = "";
+let video3 = "";//视频链接临时储存
+let temp2 = "";//翻译文本临时储存
+let suo = false;//防止下一次动作覆盖上一个动作
 let replyFunc = (context, msg, at = false) => {
     //logger2.info("推特：" + msg)
 };
@@ -535,6 +537,7 @@ function checkTwiTimeline() {
                             let last_tweet_id = subscribes[i].tweet_id; //最新一条推特id
                             let current_id = tweet_list[0].id_str;
                             if (current_id > last_tweet_id) {
+                                suo = true;
                                 let groups = subscribes[i].groups;
                                 for (let tweet of tweet_list) {
                                     if (tweet.id_str > last_tweet_id) { //每一个推，一次发完所有订阅的群，直到所有推特发完
@@ -565,6 +568,9 @@ function checkTwiTimeline() {
                                             }
                                         });
                                         video3 = "";
+                                        //logger2.info("2: " + temp2);
+                                        temp2 = "";
+                                        //logger2.info("3: " + temp2);
                                     }
                                 }
                                 await mongodb(DB_PATH, {
@@ -584,6 +590,7 @@ function checkTwiTimeline() {
                                             mongo.close();
                                         });
                                 });
+                                suo = false;
                             }
                         }
                     } catch (err) {
@@ -842,8 +849,10 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false)
         }
     }
     logger2.info("原文：" + text);
-    let temp = await translate.translate("auto", "zh", text);
-    text = text + (temp != "" ? "\n腾讯翻译: \n" + temp : "");
+    if (temp2 == "") {
+        temp2 = await translate.translate("auto", "zh", text);
+    }
+    text = text + (temp2 != "" ? "\n腾讯翻译: \n" + temp2 : "");
     if ("urls" in tweet.entities && tweet.entities.urls.length > 0) {
         for (let i = 0; i < tweet.entities.urls.length; i++) {
             text = text.replace(tweet.entities.urls[i].url, tweet.entities.urls[i].expanded_url);
@@ -876,8 +885,14 @@ function urlExpand(twitter_short_url) {
 
 function rtTimeline(context, name, num) {
     searchUser(name).then(user => {
-        if (!user) replyFunc(context, "未找到该推特");
-        else if (user.protected == true) replyFunc(context, "该twitter受到保护，无法浏览");
+        if (!user) {
+            replyFunc(context, "未找到该推特");
+            suo = false;
+        }
+        else if (user.protected == true) {
+            replyFunc(context, "该twitter受到保护，无法浏览");
+            suo = false;
+        }
         else {
             getUserTimeline(user.id_str, 20).then(async timeline => {
                 if (timeline.length - 1 < num) timeline = await getUserTimeline(user.id_str, 50);
@@ -890,10 +905,21 @@ function rtTimeline(context, name, num) {
                         replyFunc(context, video3);
                         video3 = "";
                     }
-                }).catch(err => logger2.error(new Date().toString() + ",推特rtTimeline：" + err));
+                    //logger2.info("2: " + temp2);
+                    temp2 = "";
+                    suo = false;
+                    //logger2.info("3: " + temp2);
+                }).catch(err => {
+                    logger2.error(new Date().toString() + ",推特rtTimeline：" + err);
+                    suo = false;
+                });
                 //error: Fri Oct 16 2020 07:02:20 GMT+0800 (GMT+08:00),推特rtTimeline：TypeError: Cannot use 'in' operator to search for 'full_text' in undefined
+            }).catch(err => {
+                suo = false;
             });
         }
+    }).catch(err => {
+        suo = false;
     });
 }
 
@@ -906,8 +932,14 @@ function rtSingleTweet(tweet_id_str, context) {
                 replyFunc(context, video3);
                 video3 = "";
             }
-        })
-    });
+            //logger2.info("2: " + temp2);
+            temp2 = "";
+            suo = false;
+            //logger2.info("3: " + temp2);
+        }).catch(err => {
+            suo = false;
+        });
+    }).catch(err => { suo = false; });
 }
 
 /**
@@ -948,6 +980,12 @@ function twitterAggr(context) {
         [gid].forEach((id, i) => id && cache2.set(cacheKeys[i], true));
     }
     if (connection && /^看看(.+?)的?((第[0-9]?[一二三四五六七八九]?条)|(上*条)|(最新))?\s?(推特|twitter)$/i.test(context.message)) {
+        if (suo == true) {
+            return;
+        }
+        else {
+            suo = true;
+        }
         let num = 1;
         let name = "";
         if (/最新/.test(context.message)) (num = 0);
@@ -976,6 +1014,12 @@ function twitterAggr(context) {
         rtTimeline(context, name, num);
         return true;
     } else if (connection && /^看看https:\/\/(mobile\.)?twitter.com\/.+?\/status\/(\d+)/i.test(context.message)) {
+        if (suo == true) {
+            return;
+        }
+        else {
+            suo = true;
+        }
         let tweet_id = /status\/(\d+)/i.exec(context.message)[1];
         rtSingleTweet(tweet_id, context);
         return true;
@@ -1006,7 +1050,9 @@ function twitterAggr(context) {
         if (/owner|admin/.test(context.sender.role)) clearSubs(context, context.group_id);
         else replyFunc(context, '无权限');
         return true;
-    } else return false;
+    } else {
+        return false;
+    }
 }
 //setAgent();
 firstConnect();
