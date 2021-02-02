@@ -724,9 +724,10 @@ function clearSubs(context, group_id) {
  * @param {string} from_user twitter用户名
  * @returns Promise  排列完成的Tweet String
  */
-async function format(tweet, useruid = -1, end_point = false, retweeted = false) {
+async function format(tweet, useruid = -1, end_point = false, retweeted = false, headpicshu1 = 0) {
     let payload = [];
     let text = "";
+    let headpicshu2 = headpicshu1;
     if ('full_text' in tweet) text = tweet.full_text;
     else text = tweet.text;
     if ("retweeted_status" in tweet) {
@@ -794,12 +795,14 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false)
     }
     if ("is_quote_status" in tweet && tweet.is_quote_status == true) {
         let quote_tweet = await getSingleTweet(tweet.quoted_status_id_str);
-        payload.push("提到了", await format(quote_tweet, -1, false, true));
+        headpicshu2++;
+        payload.push("提到了", await format(quote_tweet, -1, false, true, headpicshu2));
         text = text.replace(tweet.quoted_status_permalink.url, "");
     }
     if ("in_reply_to_status_id" in tweet && tweet.in_reply_to_status_id != null && !end_point) {
         let reply_tweet = await getSingleTweet(tweet.in_reply_to_status_id_str);
-        payload.push("回复了", await format(reply_tweet, -1, false, true));
+        headpicshu2++;
+        payload.push("回复了", await format(reply_tweet, -1, false, true, headpicshu2));
     }
     let ii = 0;
     if ("card" in tweet) {
@@ -859,7 +862,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false)
             text = text.replace(tweet.entities.urls[i].url, tweet.entities.urls[i].expanded_url);
         }
     }
-    payload.unshift(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.user.profile_image_url_https.replace("_normal","_bigger"), "headpic", 0)}]\n${tweet.user.name}${useruid != -1 & retweeted == false ? "(推特用户id：" + useruid + ")的twitter\n更新了" : ""}`, text);
+    payload.unshift(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.user.profile_image_url_https.replace("_normal", "_bigger"), "headpic", headpicshu1)}]\n${tweet.user.name}${useruid != -1 & retweeted == false ? "(推特用户id：" + useruid + ")的twitter\n更新了" : ""}`, text);
     return payload.join("\n");
 }
 
