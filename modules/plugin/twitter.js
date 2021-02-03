@@ -568,11 +568,11 @@ function checkTwiTimeline() {
                                                 }).catch(err => logger2.error(new Date().toString() + ",推特6：" + err));
                                             }
                                         });
-                                        video3 = "";
-                                        //logger2.info("2: " + temp2);
-                                        temp2 = "";
-                                        //logger2.info("3: " + temp2);
                                     }
+                                    video3 = "";
+                                    //logger2.info("2: " + temp2);
+                                    temp2 = "";
+                                    //logger2.info("3: " + temp2);
                                 }
                                 await mongodb(DB_PATH, {
                                     useUnifiedTopology: true
