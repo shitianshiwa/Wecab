@@ -857,10 +857,10 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
             //logger2.info(tweet.card.binding_values.title.string_value);
             if (tweet.card.binding_values.description != null) {
                 //logger2.info(tweet.card.binding_values.description.string_value);
-                payload.push(tweet.card.binding_values.title.string_value, tweet.card.binding_values.description.string_value);
+                payload.push(tweet.card.binding_values.title.string_value, tweet.card.binding_values.description.string_value);//推特卡片标题+简介
             } else {
                 //logger2.info(tweet.card.binding_values.description.string_value);
-                payload.push(tweet.card.binding_values.title.string_value);
+                payload.push(tweet.card.binding_values.title.string_value);//推特卡片标题
             }
         }
     }
@@ -877,6 +877,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
         }
     }
     payload.unshift(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.user.profile_image_url_https.replace("_normal", "_bigger"), "headpic", headpicshu1)}]\n${tweet.user.name}${useruid != -1 & retweeted == false ? "(推特用户id：" + useruid + ")的twitter\n更新了" : ""}`, text);
+    //是反着发的
     return payload.join("\n");
 }
 
