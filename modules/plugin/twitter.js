@@ -819,7 +819,6 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                 payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.image_large.url, "image_large", i)}]`);
                 i++;
             }
-
             /*let end_time = new Intl.DateTimeFormat('zh-Hans-CN', {
                     month: 'short',
                     day: '2-digit',
@@ -854,7 +853,14 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                 }
                 ii++;
             }
-            payload.push(tweet.card.binding_values.title.string_value, tweet.card.binding_values.description.string_value);
+            //logger2.info(JSON.stringify(tweet));
+            //logger2.info(tweet.card.binding_values.title.string_value);
+            if (tweet.card.binding_values.description != null) {
+                //logger2.info(tweet.card.binding_values.description.string_value);
+                payload.push(tweet.card.binding_values.title.string_value, tweet.card.binding_values.description.string_value);
+            }
+            //logger2.info(tweet.card.binding_values.description.string_value);
+            payload.push(tweet.card.binding_values.title.string_value);
         }
     }
     logger2.info("原文：" + text);
