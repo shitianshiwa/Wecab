@@ -858,9 +858,10 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
             if (tweet.card.binding_values.description != null) {
                 //logger2.info(tweet.card.binding_values.description.string_value);
                 payload.push(tweet.card.binding_values.title.string_value, tweet.card.binding_values.description.string_value);
+            } else {
+                //logger2.info(tweet.card.binding_values.description.string_value);
+                payload.push(tweet.card.binding_values.title.string_value);
             }
-            //logger2.info(tweet.card.binding_values.description.string_value);
-            payload.push(tweet.card.binding_values.title.string_value);
         }
     }
     logger2.info("原文：" + text);
