@@ -592,19 +592,23 @@ function checkTwiTimeline() {
                                             mongo.close();
                                         });
                                 });
-                                video3 = "";
-                                //logger2.info("video3: " + video3);
-                                temp2 = ""; //处理最后一个推特会残留的机翻文本
-                                //logger2.info("temp2: " + temp2);
-                                suo = false;
                             }
                         }
                     } catch (err) {
                         logger2.error(new Date().toString() + ",推特：" + err + ',' + JSON.stringify(subscribes[i]));
                     } finally {
                         i++;
-                        if (i < subscribes.length) checkEach();
-                        else firish = false;
+                        if (i < subscribes.length) {
+                            checkEach();
+                        } else {
+                            video3 = "";
+                            //logger2.info("video3: " + video3);
+                            temp2 = ""; //处理最后一个推特会残留的机翻文本
+                            //logger2.info("temp2: " + temp2);
+                            suo = false;
+                            firish = false;
+                        }
+
                     }
                 }, check_interval2);
             }
@@ -857,10 +861,10 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
             //logger2.info(tweet.card.binding_values.title.string_value);
             if (tweet.card.binding_values.description != null) {
                 //logger2.info(tweet.card.binding_values.description.string_value);
-                payload.push(tweet.card.binding_values.title.string_value, tweet.card.binding_values.description.string_value);//推特卡片标题+简介
+                payload.push(tweet.card.binding_values.title.string_value, tweet.card.binding_values.description.string_value); //推特卡片标题+简介
             } else {
                 //logger2.info(tweet.card.binding_values.description.string_value);
-                payload.push(tweet.card.binding_values.title.string_value);//推特卡片标题
+                payload.push(tweet.card.binding_values.title.string_value); //推特卡片标题
             }
         }
     }
