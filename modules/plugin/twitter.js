@@ -865,7 +865,8 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
     }
     logger2.info("原文：" + text);
     if (temp2 == "") {
-        temp2 = await translate.translate("auto", "zh", text);
+        temp2 = await translate.translate("auto", "zh", text.replace(/\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F]/g, ""));
+        //https://blog.csdn.net/libin_1/article/details/51483815 JavaScript正则表达式大全（过滤Emoji的最佳实践）
     }
     text = text + (temp2 != "" ? "\n腾讯翻译: \n" + temp2 : "");
     if ("urls" in tweet.entities && tweet.entities.urls.length > 0) {
