@@ -5,15 +5,19 @@ const axios = require('axios-https-proxy-fix');
 
 const TENCENT_TRANS_INIT = "https://fanyi.qq.com/";
 const TENCENT_TRANS_API = "https://fanyi.qq.com/api/translate";
-const REAAUTH_URL = "https://fanyi.qq.com/api/aaa123";//reaauth
+const REAAUTH_URL = "https://fanyi.qq.com/api/aa2a123"; //reaauth aaa123 aa2a123
 //const TRACKER_URL = "https://tracker.appadhoc.com/tracker";
 //const appKey = "ADHOC_5ec05c69-a3e4-4f5e-b281-d339b3774a2f";
+const config = require('../config');
+const admin = config.default.bot.admin; //发现套了一个default。。！
 
 let qtv = "";
 let qtk = "";
 let fy_guid = "";
 let target = {};
-let replyFunc = (context, msg, at = false) => { };
+let replyFunc = (context, msg, at = false) => {};
+let botFunc = null;
+let errorx = false;
 var proxy2 = false;
 let timer = null;
 let reaauth2 = 3;
@@ -24,8 +28,9 @@ let reaauth2 = 3;
     }
 }*/
 
-function transReply(replyMsg) {
+function transReply(replyMsg, bot) {
     replyFunc = replyMsg;
+    botFunc = bot;
 }
 
 function unescape(text) {
@@ -59,13 +64,12 @@ function initialise() {
     }).then(res => {
         //logger2.info("腾讯翻译1:\n" + JSON.stringify(res.headers));
         fy_guid = /fy_guid=(.+?); /.exec(res.headers["set-cookie"])[1];
-        reaauth(false);//首次params参数为""
+        reaauth(false); //首次params参数为""
 
         // 最大1分钟
         if (timer == null) {
-            timer = setInterval(reaauth, 45 * 1000);//每45s运行一次
-        }
-        else {
+            timer = setInterval(reaauth, 45 * 1000); //每45s运行一次
+        } else {
             clearInterval(timer);
             timer = null;
             timer = setInterval(reaauth, 45 * 1000);
@@ -75,7 +79,7 @@ function initialise() {
         try {
             logger2.error(new Date().toString() + " ,腾讯翻译1： " + JSON.stringify(err));
         } catch (error) {
-            logger2.error(new Date().toString() + " ,腾讯翻译1： " + err);
+            logger2.error(new Date().toString() + " ,腾讯翻译1x： " + err);
         }
         setTimeout(initialise, 5000);
     });
@@ -90,7 +94,7 @@ function reaauth(qt = true) {
         params: qt ? {
             qtv: qtv,
             qtk: qtk
-        } : ""//首次params参数为""
+        } : "" //首次params参数为""
     }).then(res => {
         //logger2.info("腾讯翻译2:\n" + JSON.stringify(res.data));
         qtv = res.data.qtv;
@@ -100,13 +104,35 @@ function reaauth(qt = true) {
         try {
             logger2.error(new Date().toString() + " ,腾讯翻译2： " + JSON.stringify(err));
         } catch (error) {
-            logger2.error(new Date().toString() + " ,腾讯翻译2： " + err);
+            logger2.error(new Date().toString() + " ,腾讯翻译2x： " + err);
         }
         if (qt == true) {
             if (reaauth2 >= 0) {
                 setTimeout(reaauth, 1000);
                 reaauth2 = reaauth2 - 1;
+            } else {
+                errorx = true;
+                clearInterval(timer);
+                timer = null;
+                clearInterval(renewToken);
+                renewToken = null;
+                logger2.error("获取腾讯翻译鉴权失败2，腾讯翻译已停止运行！");
+                botFunc('send_private_msg', {
+                    user_id: admin,
+                    message: "获取腾讯翻译鉴权失败2，腾讯翻译已停止运行！",
+                });
             }
+        } else {
+            errorx = true;
+            clearInterval(timer);
+            timer = null;
+            clearInterval(renewToken);
+            renewToken = null;
+            logger2.error("获取腾讯翻译鉴权失败1，腾讯翻译已停止运行！");
+            botFunc('send_private_msg', {
+                user_id: admin,
+                message: "获取腾讯翻译鉴权失败1，腾讯翻译已停止运行！",
+            });
         }
     });
 }
@@ -149,9 +175,8 @@ function translate(sourceLang, targetLang, sourceText) {
         try {
             logger2.error(new Date().toString() + " ,腾讯翻译3: " + JSON.stringify(err));
         } catch (error) {
-            logger2.error(new Date().toString() + " ,腾讯翻译3: " + err);
-        }
-        finally {
+            logger2.error(new Date().toString() + " ,腾讯翻译3x: " + err);
+        } finally {
             return "";
         }
     });
@@ -171,8 +196,8 @@ function toTargetLang(lang_opt) {
 
 function orientedTrans(context) {
     if (target[context.group_id] != undefined && target[context.group_id].some(aim => {
-        return aim == context.user_id
-    })) {
+            return aim == context.user_id
+        })) {
         if (/(开始|停止)定向翻译|停止全部翻译|定向翻译列表/.test(context.message)) return;
         let text = context.message.replace(/\[CQ.+\]/, "");
         if (text.length < 3) return;
@@ -222,6 +247,9 @@ function viewTarget(context) {
 }
 
 function transEntry(context) {
+    if (errorx == true) {
+        return false;
+    }
     if (/翻译[>＞].+/.test(context.message)) {
         let sourceText = context.message.substring(3, context.message.length);
         transAgent("auto", "zh", sourceText, context);
@@ -252,7 +280,7 @@ function transEntry(context) {
 }
 
 initialise();
-let renewToken = setInterval(initialise, 3600 * 1000);//一小时
+let renewToken = setInterval(initialise, 3600 * 1000); //一小时
 
 module.exports = {
     transReply,

@@ -24,7 +24,7 @@ import nbnhhsh from "./modules/plugin/nbnhhsh";
 import logger2 from './modules/logger2'; //日志功能
 import iHaveAfriend from './modules/plugin/iHaveAfriend';
 import node_localStorage from 'node-localstorage';
-import mkdirTmp from './modules/mkdirTmp';//创建临时文件文件夹
+import mkdirTmp from './modules/mkdirTmp'; //创建临时文件文件夹
 const node_localStorage2 = node_localStorage.LocalStorage;
 const wecab = new node_localStorage2('./wecab'); //插件是否连上机器人
 
@@ -40,7 +40,7 @@ weibo.weiboReply(replyMsg);
 bilibili.bilibiliReply(replyMsg);
 twitter.twitterReply(replyMsg);
 //pretendLearn.learnReply(replyMsg, logger);
-translate.transReply(replyMsg);
+translate.transReply(replyMsg, bot);
 nbnhhsh.reply(replyMsg);
 
 weibo.checkWeiboDynamic();
@@ -235,6 +235,10 @@ function privateAndAtMsg(e, context) {
         e.stopPropagation();
         return;
     }
+    /*else if (pixivImage.pixivCheck(context, replyMsg, bot)) {
+        e.stopPropagation();
+        return;
+    }*/
     /*else if (pretendLearn.learn(context)) {
         e.stopPropagation();
         return;
@@ -287,8 +291,7 @@ function groupMsg(e, context) {
     }
     if (weibo.weiboAggr(context, replyMsg) || weibo.antiweibo(context, replyMsg) ||
         bilibili.bilibiliCheck(context) || translate.transEntry(context) ||
-        iHaveAfriend.deal(context, replyMsg, bot) /*iHaveAfriend可以直接让后面的条件失效*/
-        /*pixivImage.pixivCheck(context, replyMsg, bot) ||*/
+        iHaveAfriend.deal(context, replyMsg, bot)
         /*helpZen(context, replyMsg, bot, rand) ||*/
         /*||
                pokemon.pokemonCheck(context, replyMsg)*/
@@ -375,11 +378,11 @@ function getTime() {
 function parseArgs(str, enableArray = false, _key = null) {
     const m = minimist(
         str
-            .replace(/(--\w+)(?:\s*)(\[CQ:)/g, '$1 $2')
-            .replace(/(\[CQ:[^\]]+\])(?:\s*)(--\w+)/g, '$1 $2')
-            .split(' '), {
-        boolean: true,
-    }
+        .replace(/(--\w+)(?:\s*)(\[CQ:)/g, '$1 $2')
+        .replace(/(\[CQ:[^\]]+\])(?:\s*)(--\w+)/g, '$1 $2')
+        .split(' '), {
+            boolean: true,
+        }
     );
     if (!enableArray) {
         for (const key in m) {
