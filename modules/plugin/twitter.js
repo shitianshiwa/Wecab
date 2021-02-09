@@ -870,7 +870,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
     }
     logger2.info("原文：" + text);
     if (temp2 == "") {
-        temp2 = await translate.translate("auto", "zh", text.replace(/\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F]|\uD83D[\uDE80-\uDEFF]/g, ""));
+        temp2 = await translate.translate("auto", "zh", text/*.replace(/\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F]|\uD83D[\uDE80-\uDEFF]/g, "")*/);
         //https://blog.csdn.net/libin_1/article/details/51483815 JavaScript正则表达式大全（过滤Emoji的最佳实践）
         //https://blog.csdn.net/TKG09/article/details/53309455 js判断与过滤emoji表情的方法
     }

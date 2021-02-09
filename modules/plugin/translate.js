@@ -5,7 +5,8 @@ const axios = require('axios-https-proxy-fix');
 
 const TENCENT_TRANS_INIT = "https://fanyi.qq.com/";
 const TENCENT_TRANS_API = "https://fanyi.qq.com/api/translate";
-const REAAUTH_URL = "https://fanyi.qq.com/api/aa2a123"; //reaauth aaa123 aa2a123
+let REAAUTH_URL = ""; //reaauth aaa123 aa2a123
+let reauthuri = "";
 //const TRACKER_URL = "https://tracker.appadhoc.com/tracker";
 //const appKey = "ADHOC_5ec05c69-a3e4-4f5e-b281-d339b3774a2f";
 const config = require('../config');
@@ -21,6 +22,7 @@ let errorx = false;
 var proxy2 = false;
 let timer = null;
 let reaauth2 = 3;
+let initialise2 = 3;
 /*if (PROXY_CONF.host.length > 0 && PROXY_CONF.port !== 0) {
     proxy2 = {
         host: PROXY_CONF.host,
@@ -64,6 +66,10 @@ function initialise() {
     }).then(res => {
         //logger2.info("腾讯翻译1:\n" + JSON.stringify(res.headers));
         fy_guid = /fy_guid=(.+?); /.exec(res.headers["set-cookie"])[1];
+        reauthuri = /reauthuri = "(.+?)";/.exec(res.data)[1]; //获取动态api名
+        REAAUTH_URL = "https://fanyi.qq.com/api/" + reauthuri;
+        //logger2.info(res.data);
+        logger2.info("reauthuri:" + REAAUTH_URL);
         reaauth(false); //首次params参数为""
 
         // 最大1分钟
@@ -74,6 +80,7 @@ function initialise() {
             timer = null;
             timer = setInterval(reaauth, 45 * 1000);
         }
+        initialise2 = 3;
         logger2.info("腾讯翻译初始化完成");
     }).catch(err => {
         try {
@@ -81,7 +88,23 @@ function initialise() {
         } catch (error) {
             logger2.error(new Date().toString() + " ,腾讯翻译1x： " + err);
         }
-        setTimeout(initialise, 5000);
+        if (initialise2 > 0) {
+            setTimeout(initialise, 5000);
+            initialise2--;
+        } else {
+            errorx = true;
+            if (timer != null) {
+                clearInterval(timer);
+                timer = null;
+            }
+            clearInterval(renewToken);
+            renewToken = null;
+            logger2.error("获取腾讯翻译鉴权失败1，腾讯翻译已停止运行！");
+            botFunc('send_private_msg', {
+                user_id: admin,
+                message: "获取腾讯翻译鉴权失败1，腾讯翻译已停止运行！",
+            });
+        }
     });
 }
 
@@ -148,6 +171,9 @@ function translate(sourceLang, targetLang, sourceText) {
     //console.log(sourceText.replace(/\[CQ:image.*?\]/g,""));//清理图片CQ码
     //console.log(sourceText.replace(/(http|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&:/~\+#]*[\w\-\@?^=%&/~\+#])?/g, ''));//清理链接
     let temp = sourceText.replace(/&amp;/g, "&").replace(/&#91;/g, "[").replace(/&#93;/g, "]").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\[CQ:image.*?\]/g, "").replace(/(http|https):\/\/[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&:/~\+#]*[\w\-\@?^=%&/~\+#])?/g, '');
+    temp = temp.replace(/\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F]|\uD83D[\uDE80-\uDEFF]/g, "");//过滤Emoji
+    //https://blog.csdn.net/libin_1/article/details/51483815 JavaScript正则表达式大全（过滤Emoji的最佳实践）
+    //https://blog.csdn.net/TKG09/article/details/53309455 js判断与过滤emoji表情的方法
     if (temp == "") {
         return "";
     }
