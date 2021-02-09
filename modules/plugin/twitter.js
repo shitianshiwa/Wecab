@@ -318,6 +318,7 @@ function getUserTimeline(user_id, count = 2, include_rt = false, exclude_rp = tr
         logger2.info("getUserTimeline/x-rate-limit-limit: " + res.headers["x-rate-limit-limit"]);
         logger2.info("getUserTimeline/x-rate-limit-remaining: " + res.headers["x-rate-limit-remaining"]);
         logger2.info("getUserTimeline/x-rate-limit-reset: " + res.headers["x-rate-limit-reset"]);
+        //logger2.info(JSON.stringify(res.data));
         return res.data;
     }).catch(err => {
         logger2.error(new Date().toString() + ",推特3：" + JSON.stringify(err.response.data));
@@ -870,7 +871,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
     }
     logger2.info("原文：" + text);
     if (temp2 == "") {
-        temp2 = await translate.translate("auto", "zh", text/*.replace(/\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F]|\uD83D[\uDE80-\uDEFF]/g, "")*/);
+        temp2 = await translate.translate("auto", "zh", text /*.replace(/\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F]|\uD83D[\uDE80-\uDEFF]/g, "")*/ );
         //https://blog.csdn.net/libin_1/article/details/51483815 JavaScript正则表达式大全（过滤Emoji的最佳实践）
         //https://blog.csdn.net/TKG09/article/details/53309455 js判断与过滤emoji表情的方法
     }
@@ -916,6 +917,35 @@ function rtTimeline(context, name, num) {
             suo = false;
         } else {
             getUserTimeline(user.id_str, 20).then(async timeline => {
+                if (num == -1) { //获取置顶推
+                    //logger2.info(JSON.stringify(timeline[0].user.pinned_tweet_ids_str[0]));
+                    if (timeline[0].user.pinned_tweet_ids_str[0] == undefined) {
+                        replyFunc(context, "该用户没有置顶的推特");
+                    }
+                    getSingleTweet(timeline[0].user.pinned_tweet_ids_str[0]).then(tweet => {
+                        format(tweet).then(tweet_string => {
+                            logger2.info(tweet_string);
+                            replyFunc(context, tweet_string);
+                            if (video3 != "") {
+                                replyFunc(context, video3);
+                            }
+                            temp2 = "";
+                            suo = false;
+                            video3 = "";
+                            //logger2.info("video3: " + video3);
+                            //logger2.info("temp2: " + temp2);
+                        }).catch(err => {
+                            temp2 = "";
+                            suo = false;
+                            video3 = "";
+                        });
+                    }).catch(err => {
+                        temp2 = "";
+                        suo = false;
+                        video3 = "";
+                    });
+                    return true;
+                }
                 if (timeline.length - 1 < num) timeline = await getUserTimeline(user.id_str, 50);
                 if (timeline.length - 1 < num) timeline = await getUserTimeline(user.id_str, 1, true, false);
                 format(timeline[num]).then(tweet_string => {
@@ -1012,7 +1042,7 @@ function twitterAggr(context) {
         }
         [gid].forEach((id, i) => id && cache2.set(cacheKeys[i], true));
     }
-    if (connection && /^看看(.+?)的?((第[0-9]?[一二三四五六七八九]?条)|(上*条)|(最新))?\s?(推特|twitter)$/i.test(context.message)) {
+    if (connection && /^看看(.+?)的?((第[0-9]?[一二三四五六七八九]?条)|(上*条)|(最新)|(置顶))?\s?(推特|twitter)$/i.test(context.message)) {
         if (suo == true) {
             return;
         } else {
@@ -1020,7 +1050,8 @@ function twitterAggr(context) {
         }
         let num = 1;
         let name = "";
-        if (/最新/.test(context.message))(num = 0);
+        if (/置顶/.test(context.message))(num = -1);
+        else if (/最新/.test(context.message))(num = 0);
         else if (/上上上条/.test(context.message))(num = 3);
         else if (/上上条/.test(context.message))(num = 2);
         else if (/上一?条/.test(context.message))(num = 1);
@@ -1031,7 +1062,7 @@ function twitterAggr(context) {
             } else {
                 temp = 0;
             }
-            if (temp == 0 || temp == "零")(num = 0);
+            if (temp == 0 || temp == "零")(num = -1);
             else if (temp == 1 || temp == "一")(num = 0);
             else if (temp == 2 || temp == "二")(num = 1);
             else if (temp == 3 || temp == "三")(num = 2);

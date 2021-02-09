@@ -91,7 +91,7 @@ function searchName(keyword = "") {
 function getDynamicList(uid, num = 0) {
     let header = httpHeader(uid);
     if (num == -1) {
-        header.params.need_top = 1; //这样才能得到动态置顶内容
+        header.params.need_top = 1; //这样才能得到动态置顶内容 无关记录：b站视频评论区的存在两个置顶（楼主和管理员置顶）
         num = 0;
     }
     return axios(header).then(response => {
@@ -554,6 +554,7 @@ function sender(context, dynamicObj = {}, at = false) {
                 payload.push(rt_payload.join("\n"));
             } else if (dynamicObj[item] != 0) payload.push(dynamicObj[item]);
         }
+        logger2.info(payload.join("\n"));
         replyFunc(context, payload.join("\n"), at);
     }
 }
@@ -563,6 +564,7 @@ function rtBilibili(context, name = "", num = 0, dynamic_id = "") {
         getDynamicDetail(dynamic_id).then(dynamic => {
             if (dynamic == undefined) sender(context, "输错了");
             else {
+                //logger2.info(dynamic);
                 let clean_dynamic = dynamicProcess(dynamic);
                 sender(context, clean_dynamic);
             }
@@ -575,7 +577,7 @@ function rtBilibili(context, name = "", num = 0, dynamic_id = "") {
             } else {
                 //console.log(name_card.mid);
                 getDynamicList(name_card.mid, num).then(dynamic => {
-                    //console.log(dynamic);
+                    //logger2.info(dynamic);
                     let clean_dynamic = dynamicProcess(dynamic);
                     sender(context, clean_dynamic);
                 });
