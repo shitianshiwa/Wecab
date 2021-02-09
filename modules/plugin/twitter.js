@@ -33,7 +33,8 @@ const PROXY_CONF = config.default.proxy; //发现套了一个default。。！
 const DB_PORT = 27017;
 const DB_PATH = "mongodb://127.0.0.1:" + DB_PORT;
 const BEARER_TOKEN = "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA";
-const MAX_SIZE = 30 * 1024 * 1024; //图片最大体积
+const PIC_MAX_SIZE = 30 * 1024 * 1024; //图片最大体积
+const VID_MAX_SIZE = 100 * 1024 * 1024; //视频最大体积
 const OPTION_MAP = {
     "仅原创": [1, 0, 0, 1],
     "仅转发": [0, 1, 0, 0],
@@ -143,7 +144,7 @@ function firstConnect() {
     });
 }
 
-function sizeCheck(url) {
+function sizeCheck(url, model = true) { //true 图片 false 视频
     return axios({
         method: "GET",
         url: url,
@@ -151,7 +152,11 @@ function sizeCheck(url) {
         proxy: proxy2,
         timeout: 10000
     }).then(res => {
-        return parseInt(res.headers["content-length"]) < MAX_SIZE ? true : false;
+        if (model == true) {
+            return parseInt(res.headers["content-length"]) < PIC_MAX_SIZE ? true : res.headers["content-length"] / 1024 / 1024; //图片
+        } else {
+            return parseInt(res.headers["content-length"]) < VID_MAX_SIZE ? true : res.headers["content-length"] / 1024 / 1024; //视频
+        }
     }).catch(err => {
         logger2.error(new Date().toString() + ",推特0：" + url + "," + err);
         return false;
@@ -756,8 +761,9 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                     if (media[i].type == "photo") {
                         //src = [media[i].media_url_https.substring(0, media[i].media_url_https.length - 4), '?format=jpg&name=4096x4096'].join("");
                         src = [media[i].media_url_https.substring(0, media[i].media_url_https.length - 4), (media[i].media_url_https.search("jpg") != -1 ? '?format=jpg&name=orig' : '?format=png&name=orig')].join(""); //?format=png&name=orig 可能出现这种情况
-                        pics += await sizeCheck(src) ? `[CQ:image,cache=0,file=file:///${await downloadx(src, "photo", i)}]` : `[CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https, "photo", i)}] 注：这不是原图`;
-                        logger2.info("src:" + src + " , media[i].media_url_https:" + media[i].media_url_https);
+                        let temp = await sizeCheck(src);
+                        pics += (temp == true ? `[CQ:image,cache=0,file=file:///${await downloadx(src, "photo", i)}]` : `[CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https, "photo", i)}] 注：这不是原图,原图大小为${temp}MB`);
+                        logger2.info("src:" + src + " , media[i].media_url_https:" + media[i].media_url_https + `图片大小为${temp}MB`);
                     } else if (media[i].type == "animated_gif") {
                         try {
                             logger2.info("media[i].video_info.variants[0].url:" + media[i].video_info.variants[0].url);
@@ -767,7 +773,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                                     stderr
                                 }) => {
                                     if (stdout.length == 0) {
-                                        if (fs.statSync(`${__dirname}/temp.gif`).size < MAX_SIZE) { //帧数过高可能发不出来gif,gif和插件模块放在一块，不在tmp文件夹里
+                                        if (fs.statSync(`${__dirname}/temp.gif`).size < PIC_MAX_SIZE) { //帧数过高可能发不出来gif,gif和插件模块放在一块，不在tmp文件夹里
                                             //let gif = fs.readFileSync(`${__dirname}/temp.gif`);
                                             //let base64gif = Buffer.from(gif, 'binary').toString('base64');
                                             pics += `这是一张动图 [CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https, "animated_gif", i)}]` + `动起来看这里${media[i].video_info.variants[0].url}`
@@ -792,11 +798,16 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                             return b.bitrate - a.bitrate;
                         });
                         logger2.info("media[i].media_url_https:" + media[i].media_url_https);
-                        let temp = await downloadx(media[i].media_url_https, "video", i);
-                        video3 = `[CQ:video,cache=0,file=file:///${await downloadx(mp4obj[0].url, "video2", i)},cover=file:///${temp},c=3]`;
-                        payload.push(`[CQ:image,cache=0,file=file:///${temp}]`,
-                            `视频地址: ${mp4obj[0].url}`);
-
+                        let tmp = await sizeCheck(smedia[i].media_url_https, false);
+                        if (tmp == true) {
+                            let temp = await downloadx(media[i].media_url_https, "video", i);
+                            video3 = `[CQ:video,cache=0,file=file:///${await downloadx(mp4obj[0].url, "video2", i)},cover=file:///${temp},c=3]`;
+                            payload.push(`[CQ:image,cache=0,file=file:///${temp}]`,
+                                `视频地址: ${mp4obj[0].url}`);
+                        } else {
+                            payload.push(`该视频超过100MB，无法直接发送.该视频大小为${tmp}MB`,
+                                `视频地址: ${mp4obj[0].url}`);
+                        }
                     }
                 }
             }
@@ -849,12 +860,13 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
             }
         } else if (/summary/.test(tweet.card.name)) {
             if ("photo_image_full_size_original" in tweet.card.binding_values) {
-                if (sizeCheck(tweet.card.binding_values.photo_image_full_size_original.image_value.url)) {
+                let temp = await sizeCheck(tweet.card.binding_values.photo_image_full_size_original.image_value.url);
+                if (temp == true) {
                     logger2.info("tweet.card.binding_values.photo_image_full_size_original.image_value.url:" + tweet.card.binding_values.photo_image_full_size_original.image_value.url);
                     payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.photo_image_full_size_original.image_value.url, "photo_image_full", ii)}]`);
                 } else {
-                    logger2.info("tweet.card.binding_values.photo_image_full_size_large.image_value.url:" + tweet.card.binding_values.photo_image_full_size_large.image_value.url);
-                    payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.photo_image_full_size_large.image_value.url, "photo_image_full", ii)}]`);
+                    logger2.info("tweet.card.binding_values.photo_image_full_size_large.image_value.url:" + tweet.card.binding_values.photo_image_full_size_large.image_value.url + ` , 原图片大小为${temp}MB`);
+                    payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.photo_image_full_size_large.image_value.url, "photo_image_full", ii)}]\n原图片大小为${temp}MB`);
                 }
                 ii++;
             }
