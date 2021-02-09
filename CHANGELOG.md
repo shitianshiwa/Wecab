@@ -1,6 +1,86 @@
 # 更新日志
   
+## 2021
+
+### 02/05 v1.6.3
+* telephone:
+  * Feat: 添加公告（给黄页中所有人发消息）
+
+### 01/30 v1.6.2
+* twitter:
+  * Fix: 搜索时由于cookie刷新周期过长，token失效导致的失败
+
+### 01/26 v1.6.1
+* telephone:
+  * Feat: 添加黄页相关功能（拨号，按名字发送）
+  * Fix: 发送消息时本群必须处于开放状态
+
+### 01/26 v1.6.0
+* dice:
+  * Remove: 多余代码
+  * Fix: 未指定最小值时骰子可能为0
+
+  ### 01/25 v1.5.9
+* translate:
+  * Fix: CPU带宽过量占用
+  * Fix: CQ码和链接之后会被无视
+
+### 01/24 v1.5.8
+* pretendLearn:
+  * fix: 当模式为正则时未正确处理转义导致使用[]时正则失效
+
+### 01/22 v1.5.7
+* telephone:
+  * feat: 可以自行禁止接收消息，使用`开启/关闭跨组消息`控制
+
+### 01/21 v1.5.6
+* feat: 使用“发送<组号>，blabla”，可以跨组发消息了
+
+### 01/10 v1.5.5
+* pretendLearn: 
+  * feat: 对于复读和教学，**没有**指定模式时，如果满足以下条件会变为精确匹配: 
+    1. 如果句子长度大于20
+    2. 包含CQ码
+
+### 01/09 v1.5.4
+* main: 
+  * feat: 增加一些全局功能
+*  initilise:
+  * feat: axios增加重试机制
+
+### 01/07 v1.5.3
+* pretendLearn: 
+  * Fix: 错误的正则并没有正确地报错跳出
+  * Feat: 教学时如果没有指定模式，rhs没有cq码，并且字数大于20，会自动变为精确触发
+
+### 01/03 v1.5.2
+* Bilibili: 
+  * Fix: 增加延迟，降低412错误出现率
+
 ## 2020
+
+### 12/08 v1.5.1
+* Twitter: 
+  * Fix: 发现检测连接的时候可能需要额外的请求头，要不然可能会失败
+
+### 12/08 v1.5.0
+* PretendLearn: 
+  * Fix: 建立等式两边不再允许使用图片，总感觉有问题
+  * Feat: 等式替换时会无视大小写
+  * Feat: 教学时可以使用多行文字
+  * Feat: 教学时如果没有指定模式，并且应答词长度大于20会默认使用精确
+
+### 11/25 v1.4.9
+* Translate: 自24日起，观测到该模块可能会引起CPU以及带宽占用缓慢上升直到100%，暂时移除，等待修复
+
+### 11/20 v1.4.8
+* Remove: 把广播功能删了
+
+### 11/20 v1.4.7
+* Twitter
+  * fix: 好像之前proxy并未起效
+* 注: package新增https-proxy-agent，注意安装
+
 ### 11/18 v1.4.6
 * Translate
   * feat: 适配腾讯翻译新的鉴权机制
@@ -8,8 +88,8 @@
   * chore: 暴露翻译接口以供别的引用使用
 
 ### 11/15 v1.4.5
-* twitter
-  * Update: twitter整体改版（未经过大量验证）(未跟进)
+* Twitter
+  * Update: Twitter整体改版（未经过大量验证）
 * Bilibili
   * Fix: 有时无法获取专栏封面
 
@@ -18,7 +98,7 @@
   * feat: 增加对直播间的解析
 
 ### 10/29 v1.3.9
-* twitter（已修复bug）
+* Twitter
   * feat: 增加proxy设置
 * config file
   * feat: 增加proxy设置栏
@@ -59,12 +139,12 @@
     *. 低保政策
     *. 对战时如果有一方数据错误，会提示修正
 
-### 10/09   
+### 10/09 
 * translate:
   * Update: 
-    1. 翻译列表会返回本组所有而不是全部，并且会at出来
-    2. 对7到10位QQ号都会响应，以前是9到10位
-    3. 正则改善
+    *. 翻译列表会返回本组所有而不是全部，并且会at出来
+    *. 对7到10位QQ号都会响应，以前是9到10位
+    *. 正则改善
 
 ### 10/08 v1.3.4  
 * translate:
@@ -80,8 +160,8 @@
 * 支持在config中修改新人入群和退群提示
 
 ### 10/02  
-* twitter:
-  * Fix: twitter图片格式问题 [#18](https://github.com/Ninzore/Wecab/issues/18)
+* Twitter:
+  * Fix: Twitter图片格式问题 [#18](https://github.com/Ninzore/Wecab/issues/18)
 
 ### 9/27  v1.3.1
 * bilibili:
@@ -159,8 +239,8 @@
 * Add: 转发b23短链时，如果重定向目标为视频则会发送视频链接
 
 ### 7/24  v1.1.6
-* Add: 现在twitter会转发投票内容以及更丰富的card内容
-* Update: twitter模块其他小改进
+* Add: 现在Twitter会转发投票内容以及更丰富的card内容
+* Update: Twitter模块其他小改进
 
 ### 7/22  v1.1.5
 * Update: 转发时会给出gif动图而不是mp4链接（过大时仍然会给出链接）
@@ -175,14 +255,14 @@
 * Delete: 删除extra文件夹（没用）
 
 ### 7/14  v1.1.2
-* Fixed: 看看xxtwitter有时会无效的bug
+* Fixed: 看看xxTwitter有时会无效的bug
 
 ### 7/10  V1.1.1
 * Fixed: 不加选项时添加订阅出错，订阅转发时url出错
 
 ### 7/07  V1.1.0
-* Added: twitter订阅时的可选项更多，添加（包含转发，不要转发，仅回复，包含回复，不要回复）  
-* Change: 修改twitter订阅查询机制  
+* Added: Twitter订阅时的可选项更多，添加（包含转发，不要转发，仅回复，包含回复，不要回复）  
+* Change: 修改Twitter订阅查询机制  
 * 注：更新后与旧版本**不兼容**  
 [commit](https://github.com/Ninzore/Wecab/commit/1091153a7c6b02c3f820b59d9c8c79da54a870ef)
 
@@ -191,14 +271,14 @@
 [commit](https://github.com/Ninzore/Wecab/commit/1091153a7c6b02c3f820b59d9c8c79da54a870ef)
 
 ### 7/05  
-* Fixed: 如果在检查区间发送多条twitter，只会发送最新一条的bug，现在会正确发送所有新内容  
+* Fixed: 如果在检查区间发送多条Twitter，只会发送最新一条的bug，现在会正确发送所有新内容  
 [commit](https://github.com/Ninzore/Wecab/commit/9c3e7b515c4f76b1123f2d86fa0890f7ceef7bef)
 
 ### 7/01  v1.0.0
 * New: 完全脱离CQ-picfinder,不依赖原项目
 
 ### 6/29
-* Added: 添加一键清空该群所有twitter订阅  [commit](https://github.com/Ninzore/Wecab/commit/d17cee9c7f701500c0ae03040dc8766cd7bb54ba)
+* Added: 添加一键清空该群所有Twitter订阅  [commit](https://github.com/Ninzore/Wecab/commit/d17cee9c7f701500c0ae03040dc8766cd7bb54ba)
 * Fixed: 不准复读图片时的错误  [commit](https://github.com/Ninzore/Wecab/commit/867d96d7f0d02a8dba8247d1f385175d69b181e0)
 
 ### 6/28
@@ -247,11 +327,11 @@
 * Added: 烤推支持覆盖原文  
 
 ### 6/03
-* Added:  添加对twitter移动版mobile.twitter网址的识别   
+* Added:  添加对Twitter移动版mobile.twitter网址的识别   
 * Changed: 简化twitter指令  
-   1. 取消看看xxtwitter>链接，现在默认发送链接  
-   2. 取消看看xxtwitter>截图，转为使用twitter截图url  
-   3. 看看twitter url改为 看看url，方便使用  
+   1. 取消看看xxTwitter>链接，现在默认发送链接  
+   2. 取消看看xxTwitter>截图，转为使用twitter截图url  
+   3. 看看Twitter url改为 看看url，方便使用  
   
 ### 6/02
 * Fixed: 解决检查连接性出错的bug  
@@ -305,21 +385,21 @@
   * 加入了能不能好好说话模块   
 
 ### 5/02
-  * 支持烤推时直接在原twitter页面上插入html    
+  * 支持烤推时直接在原Twitter页面上插入html    
 
 ### 4/29
-  * 支持烤推时使用简单语句或者CSS装饰原twitter  
+  * 支持烤推时使用简单语句或者CSS装饰原Twitter  
 
 ### 4/28
   * 加入烤推功能  
 
 ### 4/27
-  * 现在twitter会发送原图了  
-  * 处理当twitter订阅选项为仅原创时仍然会发送转推内容的bug  
-  * 修改了截图时的选择器避免在有的twitter产生bug  
+  * 现在Twitter会发送原图了  
+  * 处理当Twitter订阅选项为仅原创时仍然会发送转推内容的bug  
+  * 修改了截图时的选择器避免在有的Twitter产生bug  
 
 ### 4/26
-  * 新增twitter截图功能  
+  * 新增Twitter截图功能  
 
 ### 4/25
   * 新增翻译功能 
@@ -331,16 +411,16 @@
   * weibo.js 修正一个正则错误，以及增加没有获取到微博时间线时的处理  
 
 ### 4/22
-  * twitter可选订阅模式  
+  * Twitter可选订阅模式  
 
 ### 4/21
-  * twitter连接机制优化
-  * twitter模块多个bug修正
+  * Twitter连接机制优化
+  * Twitter模块多个bug修正
     1. 无法正确显示订阅  
     2. 订阅后无法自动转发  
 
 ### 4/20
-  * 完全重写twitter模块，抛弃之前使用的RSSHub（更新太慢了    
+  * 完全重写Twitter模块，抛弃之前使用的RSSHub（更新太慢了    
 
 ### 4/08
   * 新增使用url订阅微博账号功能
@@ -349,7 +429,7 @@
   * 完全重构微博模块，支持订阅时选项    
 
 ### 3/26
-  * 新增twitter订阅功能  
+  * 新增Twitter订阅功能  
   * 微博catch err bug处理
 
 ### 3/25
