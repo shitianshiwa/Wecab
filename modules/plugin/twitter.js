@@ -20,6 +20,7 @@ const NodeCache = require('node-cache');
 const translate = require('./translate');
 //https://www.npmjs.com/package/level
 const config = require('../config');
+
 //console.log(config);
 //针对用户qq号的延时
 const cache = new NodeCache({
@@ -733,6 +734,28 @@ function clearSubs(context, group_id) {
     }).catch(err => logger2.error(new Date().toString() + ":" + err + ",twitter clearSubs error, group_id= " + group_id));
 }
 
+
+/**
+ * 下载视频并发送
+ * @param {string} url 视频链接
+ * @param {object} context
+ */
+async function downloadvideo(url, context) {
+    logger2.info("要发送的视频链接: "+url);
+    try {
+        replyFunc(context, `[CQ:video,cache=0,file=file:///${await downloadx(url, "video2", -1)},cover=file:///${__dirname}/black.jpg,c=3]`)
+            .then(() => {
+                logger2.info("发送视频完成");
+            }).catch(err => {
+                logger2.error(new Date().toString() + ",发送视频：" + err);
+            });
+    } catch (err) {
+
+    } finally {
+        suo = false;
+    }
+}
+
 /**
  * 整理tweet_obj
  * @param {object} tweet Tweet object
@@ -767,21 +790,40 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                     } else if (media[i].type == "animated_gif") {
                         try {
                             logger2.info("media[i].video_info.variants[0].url:" + media[i].video_info.variants[0].url);
-                            await exec(`ffmpeg -i ${await downloadx(media[i].video_info.variants[0].url, "animated_gif", i)} -loop 0 -y ${__dirname}/temp.gif`)
+                            let gifpath0 = __dirname; //获取twitter.js文件的绝对路径
+                            let gifpath = await downloadx(media[i].video_info.variants[0].url, "animated_gif", i); //下载gif视频并获得本地路径
+                            let gifpath2 = await downloadx(media[i].media_url_https, "animated_gif", i); //gif第一帧封面
+                            await exec(`ffmpeg -i ${gifpath} -loop 0 -y ${ gifpath0}/temp.gif`)
                                 .then(async ({
                                     stdout,
                                     stderr
                                 }) => {
                                     if (stdout.length == 0) {
-                                        if (fs.statSync(`${__dirname}/temp.gif`).size < PIC_MAX_SIZE) { //帧数过高可能发不出来gif,gif和插件模块放在一块，不在tmp文件夹里
-                                            //let gif = fs.readFileSync(`${__dirname}/temp.gif`);
-                                            //let base64gif = Buffer.from(gif, 'binary').toString('base64');
-                                            pics += `这是一张动图 [CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https, "animated_gif", i)}]` + `动起来看这里${media[i].video_info.variants[0].url}`
-                                            pics += `[CQ:image,file=file:///${__dirname}/temp.gif]`;
-                                            //pics += `[CQ:image,file=base64://${base64gif}]`;
-                                            //console.log(__dirname + "/temp.gif");
-                                            //pics += `[CQ:image,file=file:///${__dirname}/temp.gif]`;
-                                        } else pics += `这是一张动图 [CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https, "animated_gif", i)}]` + `动起来看这里${media[i].video_info.variants[0].url}`;
+                                        //logger2.info("gifpath0：" + gifpath0);
+                                        if (fs.statSync(`${gifpath0}/temp.gif`).size < PIC_MAX_SIZE) { //帧数过高可能发不出来gif,gif和插件模块放在一块，不在tmp文件夹里
+                                            try {
+                                                await exec(`ffmpeg -i ${gifpath0}/temp.gif -f null -`) //判断gif的总帧数 https://www.npmjs.com/package/gif-meta https://github.com/indatawetrust/gif-meta
+                                                    .then(async giftemp => {
+                                                        let giftemp2 = /frame=(.+?)fps/.exec(JSON.stringify(giftemp.stderr))[1].replace("fps", "").trim();
+                                                        logger2.info("gif的总帧数：" + giftemp2);
+                                                        if (giftemp2 <= 300) {
+                                                            //let gif = fs.readFileSync(`${__dirname}/temp.gif`);
+                                                            //let base64gif = Buffer.from(gif, 'binary').toString('base64');
+                                                            pics += `这是一张动图 [CQ:image,cache=0,file=file:///${gifpath2}]` + `\n原gif视频地址: ${media[i].video_info.variants[0].url}\n`
+                                                            pics += `[CQ:image,cache=0,file=file:///${gifpath0}/temp.gif]`;
+                                                            //pics += `[CQ:image,file=base64://${base64gif}]`;
+                                                            //console.log(__dirname + "/temp.gif");
+                                                            //pics += `[CQ:image,file=file:///${__dirname}/temp.gif]`;
+                                                        } else {
+                                                            video3 = `[CQ:video,cache=0,file=file:///${gifpath},cover=file:///${gifpath2},c=3]`;
+                                                            payload.push(`[CQ:image,cache=0,file=file:///${gifpath2}]`,
+                                                                `原gif视频地址: ${media[i].video_info.variants[0].url}`);
+                                                        }
+                                                    })
+                                            } catch (err) {
+                                                logger2.error(new Date().toString() + ",判断gif的总帧数：" + err);
+                                            }
+                                        } else pics += `这是一张动图[CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https, "animated_gif", i)}]` + `动起来看这里${media[i].video_info.variants[0].url}`;
                                     }
                                 })
                         } catch (err) {
@@ -798,7 +840,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                             return b.bitrate - a.bitrate;
                         });
                         logger2.info("media[i].media_url_https:" + media[i].media_url_https);
-                        let tmp = await sizeCheck(smedia[i].media_url_https, false);
+                        let tmp = await sizeCheck(media[i].media_url_https, false);
                         if (tmp == true) {
                             let temp = await downloadx(media[i].media_url_https, "video", i);
                             video3 = `[CQ:video,cache=0,file=file:///${await downloadx(mp4obj[0].url, "video2", i)},cover=file:///${temp},c=3]`;
@@ -1088,7 +1130,7 @@ function twitterAggr(context) {
         name = /看看(.+?)的?((第[0-9]?[一二三四五六七八九]?条)|(上{1,3}一?条)|(置顶)|(最新))?\s?(推特|twitter)/i.exec(context.message)[1];
         rtTimeline(context, name, num);
         return true;
-    } else if (connection && /^看看https:\/\/(mobile\.)?twitter.com\/.+?\/status\/(\d+)/i.test(context.message)) {
+    } else if (connection && /^看看https:\/\/(mobile\.)?twitter\.com\/.+?\/status\/(\d+)/i.test(context.message)) {
         if (suo == true) {
             return;
         } else {
@@ -1123,6 +1165,18 @@ function twitterAggr(context) {
     } else if (/^清空(推特|twitter)订阅$/i.test(context.message)) {
         if (/owner|admin/.test(context.sender.role)) clearSubs(context, context.group_id);
         else replyFunc(context, '无权限');
+        return true;
+    } else if (connection && (/^看看https:\/\/(video\.)?twimg\.com\/tweet_video\/.*\.mp4/i.test(context.message) || /^看看https:\/\/(video\.)?twimg\.com\/amplify_video\/\d+\/vid\/1280x720\/.*\.mp4/i.test(context.message) || /^看看https:\/\/(video\.)?twimg\.com\/ext_tw_video\/\d+\/pu\/vid\/1280x720\/.*\.mp4/i.test(context.message))) {
+        //logger2.info("video");
+        if (suo == true) {
+            return;
+        } else {
+            suo = true;
+        }
+        let url = /https:\/\/video\.twimg\.com\/tweet_video\/.*\.mp4/.exec(context.message) || /https:\/\/video\.twimg\.com\/amplify_video\/\d+\/vid\/1280x720\/.*\.mp4/.exec(context.message) || /https:\/\/video\.twimg\.com\/ext_tw_video\/\d+\/pu\/vid\/1280x720\/.*\.mp4/.exec(context.message);
+        if (url != null) {
+            downloadvideo(url[0], context);
+        }
         return true;
     } else {
         return false;
