@@ -89,7 +89,7 @@ function toOptNl(option) {
         pic
     } = option;
     option = [origin, retweet, reply, pic];
-    for (key in OPTION_MAP) {
+    for (let key in OPTION_MAP) {
         if (OPTION_MAP[key].join("") == option.join("")) return key;
     }
 }
@@ -154,9 +154,9 @@ function sizeCheck(url, model = true) { //true 图片 false 视频
         timeout: 10000
     }).then(res => {
         if (model == true) {
-            return parseInt(res.headers["content-length"]) < PIC_MAX_SIZE ? true : res.headers["content-length"] / 1024 / 1024; //图片
+            return parseInt(res.headers["content-length"]) < PIC_MAX_SIZE ? true : (res.headers["content-length"] / 1024 / 1024); //图片
         } else {
-            return parseInt(res.headers["content-length"]) < VID_MAX_SIZE ? true : res.headers["content-length"] / 1024 / 1024; //视频
+            return parseInt(res.headers["content-length"]) < VID_MAX_SIZE ? true : (res.headers["content-length"] / 1024 / 1024); //视频
         }
     }).catch(err => {
         logger2.error(new Date().toString() + ",推特0：" + url + "," + err);
@@ -165,7 +165,7 @@ function sizeCheck(url, model = true) { //true 图片 false 视频
 }
 
 function httpHeader() {
-    return headers = {
+    return {
         "origin": "https://twitter.com",
         "authorization": BEARER_TOKEN,
         "cookie": cookie,
@@ -218,28 +218,28 @@ function getCookie() {
     delete headers.cookie;
     delete headers.authorization;
     axios({
-            method: "GET",
-            url: "https://twitter.com/explore",
-            headers: headers,
-            //是否启用代理访问推特
-            proxy: proxy2,
-            timeout: 10000
-        }).then(res => {
-            //logger2.info("cookie：" + JSON.stringify(res.data));
-            let temp = "";
-            let guest_id = ""; //expire 2 years
-            let personalization_id = ""; //expire 2 years
-            let ct0 = ""; //expire 1 day
-            let twitter_sess = ""; //not necessary
-            for (let i = 0; i < res.headers["set-cookie"].length; i++) {
-                if (temp = /guest_id=.+?; /.exec(res.headers["set-cookie"][i])) guest_id = temp[0];
-                else if (temp = /ct0=.+?; /.exec(res.headers["set-cookie"][i])) ct0 = temp[0];
-                else if (temp = /personalization_id=.+?; /.exec(res.headers["set-cookie"][i])) personalization_id = temp[0];
-                else if (temp = /(_twitter_sess=.+?);/.exec(res.headers["set-cookie"][i])) twitter_sess = temp[1];
-            }
-            cookie = `dnt=1; fm=0; csrf_same_site_set=1; csrf_same_site=1; gt=${guest_token}; ${ct0}${guest_id}${personalization_id}${twitter_sess}`;
-            logger2.info("获取一个cookie:" + cookie);
-        }) //.catch(err => logger2.error(new Date().toString() + ",twitter cookie设置出错，错误：" + err.response.status + "," + err.response.statusText));
+        method: "GET",
+        url: "https://twitter.com/explore",
+        headers: headers,
+        //是否启用代理访问推特
+        proxy: proxy2,
+        timeout: 10000
+    }).then(res => {
+        //logger2.info("cookie：" + JSON.stringify(res.data));
+        let temp = "";
+        let guest_id = ""; //expire 2 years
+        let personalization_id = ""; //expire 2 years
+        let ct0 = ""; //expire 1 day
+        let twitter_sess = ""; //not necessary
+        for (let i = 0; i < res.headers["set-cookie"].length; i++) {
+            if (temp = /guest_id=.+?; /.exec(res.headers["set-cookie"][i])) guest_id = temp[0];
+            else if (temp = /ct0=.+?; /.exec(res.headers["set-cookie"][i])) ct0 = temp[0];
+            else if (temp = /personalization_id=.+?; /.exec(res.headers["set-cookie"][i])) personalization_id = temp[0];
+            else if (temp = /(_twitter_sess=.+?);/.exec(res.headers["set-cookie"][i])) twitter_sess = temp[1];
+        }
+        cookie = `dnt=1; fm=0; csrf_same_site_set=1; csrf_same_site=1; gt=${guest_token}; ${ct0}${guest_id}${personalization_id}${twitter_sess}`;
+        logger2.info("获取一个cookie:" + cookie);
+    }) //.catch(err => logger2.error(new Date().toString() + ",twitter cookie设置出错，错误：" + err.response.status + "," + err.response.statusText));
         .catch(err => logger2.error(new Date().toString() + ",twitter cookie设置出错，错误：" + err));
 }
 
@@ -419,12 +419,12 @@ function subscribe(uid, option, context) {
             let tweet_id = tweet.id_str;
             let name = tweet.user.name;
             coll.insertOne({
-                    uid: uid,
-                    name: name,
-                    tweet_id: tweet_id,
-                    groups: [group_id],
-                    [group_id]: option
-                },
+                uid: uid,
+                name: name,
+                tweet_id: tweet_id,
+                groups: [group_id],
+                [group_id]: option
+            },
                 (err) => {
                     if (err) logger2.error(new Date().toString() + ",twitter subscribes insert error:" + err);
                     else replyFunc(context, `已订阅${name}(推特用户id：${uid})的twitter，模式为${option_nl}`, true);
@@ -432,18 +432,19 @@ function subscribe(uid, option, context) {
                 });
         } else {
             coll.findOneAndUpdate({
-                    uid: uid
-                }, {
-                    $addToSet: {
-                        groups: group_id
-                    },
-                    $set: {
-                        [group_id]: option
-                    }
+                uid: uid
+            }, {
+                $addToSet: {
+                    groups: group_id
                 },
+                $set: {
+                    [group_id]: option
+                }
+            },
                 (err, result) => {
                     if (err) logger2.error(new Date().toString() + ",twitter subscribes update error:" + err);
                     else {
+                        let text = "";
                         if (result.value.groups.includes(group_id)) text = "重复订阅！";
                         else text = `已订阅${result.value.name}(推特用户id：${uid})的twitter，模式为${option_nl}`;
                         replyFunc(context, text, true);
@@ -469,18 +470,18 @@ function unSubscribe(uid, context) {
     }).connect().then(async mongo => {
         let coll = mongo.db('bot').collection('twitter');
         await coll.findOneAndUpdate({
-                uid: uid,
-                //name: name_reg
-            }, {
-                $pull: {
-                    groups: {
-                        $in: [group_id]
-                    }
-                },
-                $unset: {
-                    [group_id]: []
+            uid: uid,
+            //name: name_reg
+        }, {
+            $pull: {
+                groups: {
+                    $in: [group_id]
                 }
             },
+            $unset: {
+                [group_id]: []
+            }
+        },
             async (err, result) => {
                 if (err) logger2.error(new Date().toString() + ",推特：" + err + ",database subscribes delete error");
                 else {
@@ -587,13 +588,13 @@ function checkTwiTimeline() {
                                 }).connect().then(async mongo => {
                                     let coll = mongo.db('bot').collection('twitter');
                                     await coll.updateOne({
-                                            uid: subscribes[i].uid
-                                        }, {
-                                            $set: {
-                                                tweet_id: current_id,
-                                                name: tweet_list[0].user.name
-                                            }
-                                        },
+                                        uid: subscribes[i].uid
+                                    }, {
+                                        $set: {
+                                            tweet_id: current_id,
+                                            name: tweet_list[0].user.name
+                                        }
+                                    },
                                         (err, result) => {
                                             if (err) logger2.error(new Date().toString() + ",推特：" + err + ",database update error during checktwitter");
                                             mongo.close();
@@ -660,16 +661,16 @@ function checkSubs(context) {
     }).connect().then(async mongo => {
         let coll = mongo.db('bot').collection('twitter');
         await coll.find({
-                groups: {
-                    $elemMatch: {
-                        $eq: group_id
-                    }
+            groups: {
+                $elemMatch: {
+                    $eq: group_id
                 }
-            }, {
-                projection: {
-                    _id: 0
-                }
-            })
+            }
+        }, {
+            projection: {
+                _id: 0
+            }
+        })
             .toArray().then(result => {
                 if (result.length > 0) {
                     let name_list = [];
@@ -741,7 +742,7 @@ function clearSubs(context, group_id) {
  * @param {object} context
  */
 async function downloadvideo(url, context) {
-    logger2.info("要发送的视频链接: "+url);
+    logger2.info("要发送的视频链接: " + url);
     try {
         replyFunc(context, `[CQ:video,cache=0,file=file:///${await downloadx(url, "video2", -1)},cover=file:///${__dirname}/black.jpg,c=3]`)
             .then(() => {
@@ -776,7 +777,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
     let pics = "";
     let src = "";
     if ("extended_entities" in tweet) {
-        for (entity in tweet.extended_entities) {
+        for (let entity in tweet.extended_entities) {
             if (entity == "media") {
                 let media = tweet.extended_entities.media;
                 for (let i = 0; i < media.length; i++) {
@@ -793,7 +794,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                             let gifpath0 = __dirname; //获取twitter.js文件的绝对路径
                             let gifpath = await downloadx(media[i].video_info.variants[0].url, "animated_gif", i); //下载gif视频并获得本地路径
                             let gifpath2 = await downloadx(media[i].media_url_https, "animated_gif", i); //gif第一帧封面
-                            await exec(`ffmpeg -i ${gifpath} -loop 0 -y ${ gifpath0}/temp.gif`)
+                            await exec(`ffmpeg -i ${gifpath} -loop 0 -y ${gifpath0}/temp.gif`)
                                 .then(async ({
                                     stdout,
                                     stderr
@@ -925,7 +926,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
     }
     logger2.info("原文：" + text);
     if (temp2 == "") {
-        temp2 = await translate.translate("auto", "zh", text /*.replace(/\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F]|\uD83D[\uDE80-\uDEFF]/g, "")*/ );
+        temp2 = await translate.translate("auto", "zh", text /*.replace(/\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F]|\uD83D[\uDE80-\uDEFF]/g, "")*/);
         //https://blog.csdn.net/libin_1/article/details/51483815 JavaScript正则表达式大全（过滤Emoji的最佳实践）
         //https://blog.csdn.net/TKG09/article/details/53309455 js判断与过滤emoji表情的方法
     }
@@ -1070,13 +1071,12 @@ async function addSubByName(name, option_nl, context) {
     let user = await searchUser(name);
     if (!user) {
         replyFunc(context, "未发现该用户或者输入0-9之外的数字", true);
-        return true;
     } else {
         let option = OPTION_MAP[option_nl] || [1, 0, 0, 1];
         option = opt_dict(option);
         subscribe(user.id_str, option, context);
-        return true;
     }
+    return true;
 }
 
 function twitterAggr(context) {
@@ -1104,11 +1104,11 @@ function twitterAggr(context) {
         }
         let num = 1;
         let name = "";
-        if (/置顶/.test(context.message))(num = -1);
-        else if (/最新/.test(context.message))(num = 0);
-        else if (/上上上条/.test(context.message))(num = 3);
-        else if (/上上条/.test(context.message))(num = 2);
-        else if (/上一?条/.test(context.message))(num = 1);
+        if (/置顶/.test(context.message)) (num = -1);
+        else if (/最新/.test(context.message)) (num = 0);
+        else if (/上上上条/.test(context.message)) (num = 3);
+        else if (/上上条/.test(context.message)) (num = 2);
+        else if (/上一?条/.test(context.message)) (num = 1);
         else if (/第.+?条/.test(context.message)) {
             let temp = /第([0-9]|[一二三四五六七八九])条/.exec(context.message);
             if (temp != null) {
@@ -1116,16 +1116,16 @@ function twitterAggr(context) {
             } else {
                 temp = 0;
             }
-            if (temp == 0 || temp == "零")(num = -1);
-            else if (temp == 1 || temp == "一")(num = 0);
-            else if (temp == 2 || temp == "二")(num = 1);
-            else if (temp == 3 || temp == "三")(num = 2);
-            else if (temp == 4 || temp == "四")(num = 3);
-            else if (temp == 5 || temp == "五")(num = 4);
-            else if (temp == 6 || temp == "六")(num = 5);
-            else if (temp == 7 || temp == "七")(num = 6);
-            else if (temp == 8 || temp == "八")(num = 7);
-            else if (temp == 9 || temp == "九")(num = 8);
+            if (temp == 0 || temp == "零") (num = -1);
+            else if (temp == 1 || temp == "一") (num = 0);
+            else if (temp == 2 || temp == "二") (num = 1);
+            else if (temp == 3 || temp == "三") (num = 2);
+            else if (temp == 4 || temp == "四") (num = 3);
+            else if (temp == 5 || temp == "五") (num = 4);
+            else if (temp == 6 || temp == "六") (num = 5);
+            else if (temp == 7 || temp == "七") (num = 6);
+            else if (temp == 8 || temp == "八") (num = 7);
+            else if (temp == 9 || temp == "九") (num = 8);
         } else num = 0;
         name = /看看(.+?)的?((第[0-9]?[一二三四五六七八九]?条)|(上{1,3}一?条)|(置顶)|(最新))?\s?(推特|twitter)/i.exec(context.message)[1];
         rtTimeline(context, name, num);
