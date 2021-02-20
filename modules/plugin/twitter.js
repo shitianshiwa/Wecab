@@ -151,16 +151,19 @@ function sizeCheck(url, model = true) { //true 图片 false 视频
         url: url,
         //是否启用代理访问推特
         proxy: proxy2,
-        timeout: 10000
+        headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36"
+        },
+        timeout: 15000
     }).then(res => {
         if (model == true) {
-            return parseInt(res.headers["content-length"]) < PIC_MAX_SIZE ? true : (res.headers["content-length"] / 1024 / 1024); //图片
+            return parseInt(res.headers["content-length"]) < PIC_MAX_SIZE ? true : ((res.headers["content-length"] / 1024 / 1024) + "MB"); //图片
         } else {
-            return parseInt(res.headers["content-length"]) < VID_MAX_SIZE ? true : (res.headers["content-length"] / 1024 / 1024); //视频
+            return parseInt(res.headers["content-length"]) < VID_MAX_SIZE ? true : ((res.headers["content-length"] / 1024 / 1024) + "MB"); //视频
         }
     }).catch(err => {
         logger2.error(new Date().toString() + ",推特0：" + url + "," + err);
-        return false;
+        return "获取文件大小失败";
     });
 }
 
@@ -786,7 +789,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                         //src = [media[i].media_url_https.substring(0, media[i].media_url_https.length - 4), '?format=jpg&name=4096x4096'].join("");
                         src = [media[i].media_url_https.substring(0, media[i].media_url_https.length - 4), (media[i].media_url_https.search("jpg") != -1 ? '?format=jpg&name=orig' : '?format=png&name=orig')].join(""); //?format=png&name=orig 可能出现这种情况
                         let temp = await sizeCheck(src);
-                        pics += (temp == true ? `[CQ:image,cache=0,file=file:///${await downloadx(src, "photo", i)}]` : `[CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https, "photo", i)}] 注：这不是原图,原图大小为${temp}MB`);
+                        pics += (temp == true ? `[CQ:image,cache=0,file=file:///${await downloadx(src, "photo", i)}]` : `[CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https, "photo", i)}] 注：这不是原图,原图大小为${temp}`);
                         logger2.info("src:" + src + " , media[i].media_url_https:" + media[i].media_url_https + `图片大小为${temp}MB`);
                     } else if (media[i].type == "animated_gif") {
                         try {
@@ -848,7 +851,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                             payload.push(`[CQ:image,cache=0,file=file:///${temp}]`,
                                 `视频地址: ${mp4obj[0].url}`);
                         } else {
-                            payload.push(`该视频超过100MB，无法直接发送.该视频大小为${tmp}MB`,
+                            payload.push(`该视频超过100MB，无法直接发送.该视频大小为${tmp}`,
                                 `视频地址: ${mp4obj[0].url}`);
                         }
                     }
@@ -908,8 +911,8 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                     logger2.info("tweet.card.binding_values.photo_image_full_size_original.image_value.url:" + tweet.card.binding_values.photo_image_full_size_original.image_value.url);
                     payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.photo_image_full_size_original.image_value.url, "photo_image_full", ii)}]`);
                 } else {
-                    logger2.info("tweet.card.binding_values.photo_image_full_size_large.image_value.url:" + tweet.card.binding_values.photo_image_full_size_large.image_value.url + ` , 原图片大小为${temp}MB`);
-                    payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.photo_image_full_size_large.image_value.url, "photo_image_full", ii)}]\n原图片大小为${temp}MB`);
+                    logger2.info("tweet.card.binding_values.photo_image_full_size_large.image_value.url:" + tweet.card.binding_values.photo_image_full_size_large.image_value.url + ` , 原图片大小为${temp}`);
+                    payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.photo_image_full_size_large.image_value.url, "photo_image_full", ii)}]\n原图片大小为${temp}`);
                 }
                 ii++;
             }
