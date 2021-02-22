@@ -16,7 +16,7 @@ let qtv = "";
 let qtk = "";
 let fy_guid = "";
 let target = {};
-let replyFunc = (context, msg, at = false) => {};
+let replyFunc = (context, msg, at = false) => { };
 let botFunc = null;
 let errorx = false;
 var proxy2 = false;
@@ -129,34 +129,22 @@ function reaauth(qt = true) {
         } catch (error) {
             logger2.error(new Date().toString() + " ,腾讯翻译2x： " + err);
         }
-        if (qt == true) {
-            if (reaauth2 >= 0) {
-                setTimeout(reaauth, 1000);
-                reaauth2 = reaauth2 - 1;
-            } else {
-                errorx = true;
-                clearInterval(timer);
-                timer = null;
-                clearInterval(renewToken);
-                renewToken = null;
-                logger2.error("获取腾讯翻译鉴权失败2，腾讯翻译已停止运行！");
-                botFunc('send_private_msg', {
-                    user_id: admin,
-                    message: "获取腾讯翻译鉴权失败2，腾讯翻译已停止运行！",
-                });
-            }
+        if (reaauth2 >= 0) {
+            setTimeout(reaauth, 3000);
+            reaauth2 = reaauth2 - 1;
         } else {
             errorx = true;
             clearInterval(timer);
             timer = null;
             clearInterval(renewToken);
             renewToken = null;
-            logger2.error("获取腾讯翻译鉴权失败1，腾讯翻译已停止运行！");
+            logger2.error("获取腾讯翻译鉴权失败3，腾讯翻译已停止运行！");
             botFunc('send_private_msg', {
                 user_id: admin,
-                message: "获取腾讯翻译鉴权失败1，腾讯翻译已停止运行！",
+                message: "获取腾讯翻译鉴权失败3，腾讯翻译已停止运行！",
             });
         }
+
     });
 }
 
@@ -202,9 +190,8 @@ function translate(sourceLang, targetLang, sourceText) {
             logger2.error(new Date().toString() + " ,腾讯翻译3: " + JSON.stringify(err));
         } catch (error) {
             logger2.error(new Date().toString() + " ,腾讯翻译3x: " + err);
-        } finally {
-            return "";
         }
+        return "";
     });
 }
 
@@ -222,8 +209,8 @@ function toTargetLang(lang_opt) {
 
 function orientedTrans(context) {
     if (target[context.group_id] != undefined && target[context.group_id].some(aim => {
-            return aim == context.user_id
-        })) {
+        return aim == context.user_id
+    })) {
         if (/(开始|停止)定向翻译|停止全部翻译|定向翻译列表/.test(context.message)) return;
         let text = context.message.replace(/\[CQ.+\]/, "");
         if (text.length < 3) return;
