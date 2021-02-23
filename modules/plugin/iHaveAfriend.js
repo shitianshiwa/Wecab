@@ -1,5 +1,16 @@
 const canvas = require('canvas');
 const logger2 = require('../logger2'); //日志功能
+const probe = require('probe-image-size');
+//https://www.npmjs.com/package/probe-image-size
+//const picsize = require('image-size');
+/*分享一个npm包，用来获取image的宽高
+https://www.npmjs.com/package/image-size
+
+var sizeOf = require('image-size');
+var dimensions = sizeOf('images/funny-cats.png');
+console.log(dimensions.width, dimensions.height);
+https://blog.csdn.net/gswwxyhk/article/details/109268163
+*/
 canvas.registerFont('simhei.ttf', {
     family: 'SimHei'
 });
@@ -89,25 +100,31 @@ async function counterfeit(context, replyFunc, bot) {
         const longest = 16 * Math.max(...len_list);
         const text_width = longest + 130 + 100;
         const name_width = name.length * 21 + 135;
-        let width = text_width > name_width ? text_width : name_width;
-        if (width > 830) width = 830;
-        let height = 145 + 35 * message.length + 50;
-
-        if (hasimg == true) {
-            width = width + 100;
-            height = height + 200;
+        let width2 = text_width > name_width ? text_width : name_width;
+        if (width2 > 830) width2 = 830;
+        let height2 = 145 + 35 * message.length + 50;
+        let temp = await probe(imgurl[0].url);
+        logger2.info(JSON.stringify(temp));
+        let width = 200;
+        let height = 200;
+        if (temp.width != temp.height) {//不等长宽才处理
+            height = 200 * (temp.width < temp.height ? temp.height / temp.width : (temp.width == temp.height ? 200 : temp.height / temp.width));
         }
-        const base = canvas.createCanvas(width + 50, height);
+        if (hasimg == true) {
+            width2 = width2 + 100;
+            height2 = height2 + height;
+        }
+        const base = canvas.createCanvas(width2 + 50, height2);
         let ctx = base.getContext("2d");
         ctx.fillStyle = "#ECECF6";
-        ctx.fillRect(0, 0, width + 50, height);
+        ctx.fillRect(0, 0, width2 + 50, height2);
 
         // 画气泡
         const bubble = {
             x: 130,
             y: 78,
             width: hasimg == true ? (longest <= 220 ? 250 : longest + 50) : longest + 100,
-            height: hasimg == true ? (35 * message.length > 252 ? 35 * message.length + 252 : 340) : 35 * message.length + 100,
+            height: hasimg == true ? (35 * message.length > 252 ? 35 * message.length + 250 : height + 35 * message.length + 60) : 35 * message.length + 100,
             r: 30
         };
         ctx.beginPath();
@@ -151,7 +168,7 @@ async function counterfeit(context, replyFunc, bot) {
         if (imgurl.length == 1) {
             let pic = await canvas.loadImage(imgurl[0].url);
             if (!pic) throw 1;
-            ctx.drawImage(pic, 148, 128 + getTextHeigth(message), 200, 200);
+            ctx.drawImage(pic, 148, 128 + getTextHeigth(message), width, height);
         }
 
         // 出图
