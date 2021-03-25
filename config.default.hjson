@@ -30,10 +30,31 @@
         },
         "twitter": {//只有这里填上群号的qq群才能使用推特相关的功能，示例：12345,678910
             "whitegroup": []
+        },
+        "pixiv":{//看看p站图片白名单
+            "whiteqq": []
         }
     }, 
     "proxy": {
         "host": "",//示例：127.0.0.1
         "port": 0//1080
-    }
+    },
+    "translate":{
+        // 有道翻译的api授权
+        youdao: {
+            appid: '',
+            key: '',
+            translate: false
+        },
+        // 百度翻译的api授权
+        baidu: {
+            appid: '',
+            key: '',
+            translate: false
+        },
+        tx:
+        {
+            translate: true
+        }
+    } 
 }
