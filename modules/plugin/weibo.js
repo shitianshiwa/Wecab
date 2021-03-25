@@ -558,6 +558,7 @@ function rtSingleWeibo(id, context) {
         headers: httpHeader().headers
     }).then(async res => {
         let payload = await format(res.data.data, true);
+        logger2.info(payload);
         replyFunc(context, payload);
     }).catch(err => logger2.error(new Date().toString() + ",微博6：" + err));
 }
@@ -611,6 +612,7 @@ function rtWeibo(name, num, context) {
     getUserId(name).then(uid => {
         if (uid) getTimeline(uid, num).then(res => {
             format(res).then(payload => {
+                logger2.info(payload);
                 replyFunc(context, payload);
             }).catch(err => {
                 logger2.error(new Date().toString() + ",微博8：" + err);
@@ -648,6 +650,7 @@ function antiweibo(context) {
         //logger2.info(title[0].replace('<summary>', "").replace('</summary>', ""));
         let pic = /<picture cover="(.+?)"/.exec(CQ.unescape(msg))[0].replace('<picture cover="', "").replace('"', "");
         //logger2.info(pic[0].replace('<picture cover="', "").replace('"', ""));
+        logger2.info(`新浪微博\n封面图：[CQ:image,cache=0,file=${pic}]\n内容：${title}\n链接：${url}`);
         replyFunc(context, `新浪微博\n封面图：[CQ:image,cache=0,file=${pic}]\n内容：${title}\n链接：${url}`, true);
     } else if (msg.indexOf('[CQ:json,') !== -1 && msg.indexOf('微博') !== -1) {
         //json
@@ -658,6 +661,7 @@ function antiweibo(context) {
             let url = _.get(data, 'meta.detail_1.qqdocurl').split("?")[0].replace(/\\\//g, "/");
             let title = _.get(data, 'meta.detail_1.desc');
             let pic = _.get(data, 'meta.detail_1.preview').replace(/\\\//g, "/");
+            logger2.info(`新浪微博\n封面图：[CQ:image,cache=0,file=http://${pic}]\n内容：${title}\n链接：${url}`);
             replyFunc(context, `新浪微博\n封面图：[CQ:image,cache=0,file=http://${pic}]\n内容：${title}\n链接：${url}`, true);
         }
     }
