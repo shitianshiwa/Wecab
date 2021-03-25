@@ -758,7 +758,7 @@ function checkSubs(context) {
                 $in: [group_id]
             }
         }).toArray();
-        let uid = matchs[0] != null ? matchs[0].uid : "";
+        let uid = matchs[0] != null ? matchs[0].uid : "";//https://twitter.com/intent/user?user_id=
         //logger2.info("twitter_db:" + uid);
         let options = await group_option.findOne({
             group_id: group_id

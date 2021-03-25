@@ -28,6 +28,16 @@ import mkdirTmp from './modules/mkdirTmp'; //创建临时文件文件夹
 const node_localStorage2 = node_localStorage.LocalStorage;
 const wecab = new node_localStorage2('./wecab'); //插件是否连上机器人
 
+/*
+备份mongo数据库
+docker exec -it -u 0 dockergocqhttp /bin/bash
+mkdir -p /home/headless/Documents/mongodump
+chmod 777 /home/headless/Documents/mongodump
+mongodump -h 127.0.0.1:27017 -d bot -o /home/headless/Documents/mongodump/
+恢复mongo数据库
+mongorestore -h 127.0.0.1:27017 -d bot --dir /home/headless/Documents/mongodump/bot/
+cd /home/headless/Documents/mongodump/bot/
+*/
 // 初始化开始
 //console.log(config);
 const setting = config.bot;
