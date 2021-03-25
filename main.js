@@ -18,7 +18,7 @@ import twitter from './modules/plugin/twitter';
 //import pokemon from './modules/plugin/pokemon';
 //import pretendLearn from "./modules/plugin/pretendLearn";
 import translate from "./modules/plugin/translate";
-//import pixivImage from "./modules/plugin/pixivImage";
+import pixivImage from "./modules/plugin/pixivImage";
 //import helpZen from "./modules/plugin/zen";
 import nbnhhsh from "./modules/plugin/nbnhhsh";
 import logger2 from './modules/logger2'; //日志功能
@@ -45,7 +45,7 @@ nbnhhsh.reply(replyMsg);
 
 weibo.checkWeiboDynamic();
 setTimeout(() => bilibili.checkBiliDynamic(), 20 * 1000);
-setTimeout(() => twitter.checkTwiTimeline(), 40 * 1000);
+setTimeout(() => twitter.checkTwiTimeline(), 10 * 1000);
 
 //好友请求
 bot.on('request.friend', context => {
@@ -210,6 +210,16 @@ function commonHandle(e, context) {
 
     //通用指令
     const args = parseArgs(context.message);
+    if (context.message=="wecab"||context.message=="WECAB") {
+        replyMsg(context, `[CQ:at,qq=${context.user_id}]\nhttps://github.com/Ninzore/Wecab/wiki 仅微博，b站，推特，翻译功能可用。以下为指令
+看看明日方舟微博 看看明日方舟第2条微博 订阅明日方舟微博 订阅明日方舟微博>仅转发|只看图|全部 查看微博订阅 取消订阅明日方舟微博
+看看点兔汉化组B站 看看点兔汉化组第2条B站 订阅点兔汉化组B站 订阅点兔汉化组B站>仅转发|只看图|全部 查看b站订阅 取消订阅点兔汉化组b站
+看看amatou111推特 看看amatou111第2条推特 看看amatou111置顶推特 订阅amatou111推特 订阅amatou111推特>仅转发|只看图|全部 查看推特订阅 取消订阅(推特用户id)推特 清空推特订阅
+其它说明：看看(微博手机版链接，b站动态链接，推特链接) 选择数字范围0-9  
+翻译>test 中译英>测试  （日韩英法德俄） 开始定向翻译 停止定向翻译 开始定向翻译(QQ号|atQQ号) 停止定向翻译(QQ号|atQQ号) 定向翻译列表 停止全部翻译
+把自己的发言合成为图片,指令是：合成文本test  仅支持短文本，长文本无法全部显示出来`);
+        return true;
+    }
     if (args.help) {
         replyMsg(context, 'https://github.com/Ninzore/Wecab/wiki');
         return true;
@@ -235,10 +245,10 @@ function privateAndAtMsg(e, context) {
         e.stopPropagation();
         return;
     }
-    /*else if (pixivImage.pixivCheck(context, replyMsg, bot)) {
+    else if (pixivImage.pixivCheck(context, replyMsg, bot)) {
         e.stopPropagation();
         return;
-    }*/
+    }
     /*else if (pretendLearn.learn(context)) {
         e.stopPropagation();
         return;
@@ -378,11 +388,11 @@ function getTime() {
 function parseArgs(str, enableArray = false, _key = null) {
     const m = minimist(
         str
-        .replace(/(--\w+)(?:\s*)(\[CQ:)/g, '$1 $2')
-        .replace(/(\[CQ:[^\]]+\])(?:\s*)(--\w+)/g, '$1 $2')
-        .split(' '), {
-            boolean: true,
-        }
+            .replace(/(--\w+)(?:\s*)(\[CQ:)/g, '$1 $2')
+            .replace(/(\[CQ:[^\]]+\])(?:\s*)(--\w+)/g, '$1 $2')
+            .split(' '), {
+        boolean: true,
+    }
     );
     if (!enableArray) {
         for (const key in m) {
