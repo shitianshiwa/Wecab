@@ -23,7 +23,7 @@ function findKey(obj, value) {
     }
 }
 
-let replyFunc = (context, msg, at = false) => {};
+let replyFunc = (context, msg, at = false) => { };
 
 function bilibiliReply(replyMsg) {
     replyFunc = replyMsg;
@@ -238,13 +238,13 @@ function addBiliSubscribe(context, name = "", option_nl) {
 
             if (people.length == 0) {
                 coll.insertOne({
-                        uid: uid,
-                        name: name,
-                        dynamic_id: dynamic_id,
-                        timestamp: timestamp,
-                        [group_id]: option,
-                        groups: [group_id]
-                    },
+                    uid: uid,
+                    name: name,
+                    dynamic_id: dynamic_id,
+                    timestamp: timestamp,
+                    [group_id]: option,
+                    groups: [group_id]
+                },
                     (err) => {
                         if (err) text = new Date().toString() + ":" + "bilibili addBiliSubscribe database subscribes insert error:" + err;
                         else text = `已订阅${name}的B站动态，模式为${option_nl}`;
@@ -253,15 +253,15 @@ function addBiliSubscribe(context, name = "", option_nl) {
                     });
             } else {
                 coll.findOneAndUpdate({
-                        uid: uid
-                    }, {
-                        $addToSet: {
-                            groups: group_id
-                        },
-                        $set: {
-                            [group_id]: option
-                        }
+                    uid: uid
+                }, {
+                    $addToSet: {
+                        groups: group_id
                     },
+                    $set: {
+                        [group_id]: option
+                    }
+                },
                     (err, result) => {
                         if (err) logger2.error(new Date().toString() + ",bilibili addBiliSubscribe database subscribes update error:" + err);
                         else {
@@ -297,17 +297,17 @@ function rmBiliSubscribe(context, name = "") {
             else {
                 let coll = mongo.db('bot').collection('bilibili');
                 coll.findOneAndUpdate({
-                        uid: uid
-                    }, {
-                        $pull: {
-                            groups: {
-                                $in: [group_id]
-                            },
-                            $unset: {
-                                [group_id]: []
-                            }
+                    uid: uid
+                }, {
+                    $pull: {
+                        groups: {
+                            $in: [group_id]
+                        },
+                        $unset: {
+                            [group_id]: []
                         }
-                    },
+                    }
+                },
                     async (err, result) => {
                         if (err) logger2.error(new Date().toString() + ",database bilibili unsubscribes error:" + err);
                         else {
@@ -364,9 +364,9 @@ function checkBiliDynamic() {
                                         liveList.push(subscribes[i].uid);
                                         subscribes[i].groups.forEach(group_id => {
                                             replyFunc({
-                                                    group_id: group_id,
-                                                    message_type: "group"
-                                                },
+                                                group_id: group_id,
+                                                message_type: "group"
+                                            },
                                                 `你订阅的${subscribes[i].name}开播啦！\n标题: ${status.title}\n${status.url}`);
                                         });
                                     } else if (status.liveStatus === 0 && liveList.indexOf(subscribes[i].uid) != -1) {
@@ -375,9 +375,9 @@ function checkBiliDynamic() {
                                         });
                                         subscribes[i].groups.forEach(group_id => {
                                             replyFunc({
-                                                    group_id: group_id,
-                                                    message_type: "group"
-                                                },
+                                                group_id: group_id,
+                                                message_type: "group"
+                                            },
                                                 `你订阅的${subscribes[i].name}下播啦！`);
                                         });
                                     }
@@ -386,9 +386,11 @@ function checkBiliDynamic() {
                             await getDynamicList(subscribes[i].uid, 0).then(dynamic => {
                                 let last_timestamp = subscribes[i].timestamp;
                                 let curr_timestamp = dynamic.desc.timestamp;
+                                let index = 1;
                                 if (curr_timestamp > last_timestamp) {
-                                    update(subscribes[i], dynamic);
+                                    update(subscribes[i], dynamic, index);
                                 }
+                                index++;
                             });
                         }
                         i++;
@@ -400,7 +402,7 @@ function checkBiliDynamic() {
         });
     }, check_interval);
 
-    function update(subscribe, dynamic) {
+    function update(subscribe, dynamic, index) {
         mongodb(db_path, {
             useUnifiedTopology: true
         }).connect(async function (err, mongo) {
@@ -411,22 +413,30 @@ function checkBiliDynamic() {
                 let clean_dynamic = dynamicProcess(dynamic);
                 let curr_timestamp = dynamic.desc.timestamp;
                 let groups = subscribe.groups;
+                let dynamicObj2 = {
+                    name: clean_dynamic.name,
+                    text: clean_dynamic.text,
+                    pics: clean_dynamic.pics,
+                    video: clean_dynamic.video,
+                    rt_dynamic: clean_dynamic.rt_dynamic,
+                };
+                let url = clean_dynamic.url;
                 groups.forEach(group_id => {
                     if (checkOption(JSON.parse(dynamic.card)), subscribe[group_id]) {
                         sender({
                             group_id: group_id,
                             message_type: "group"
-                        }, clean_dynamic);
+                        }, url, dynamicObj2, false, index);
                     } else;
                 });
                 await coll.updateOne({
-                        uid: subscribe.uid
-                    }, {
-                        $set: {
-                            timestamp: curr_timestamp,
-                            dynamic_id: dynamic_id
-                        }
-                    },
+                    uid: subscribe.uid
+                }, {
+                    $set: {
+                        timestamp: curr_timestamp,
+                        dynamic_id: dynamic_id
+                    }
+                },
                     (err, result) => {
                         if (err) logger2.error(new Date().toString() + ",database update error when checking bilibili dynamic updates:" + err);
                         mongo.close();
@@ -462,16 +472,16 @@ function checkBiliSubs(context) {
         else {
             let coll = mongo.db('bot').collection('bilibili');
             coll.find({
-                    groups: {
-                        $elemMatch: {
-                            $eq: group_id
-                        }
+                groups: {
+                    $elemMatch: {
+                        $eq: group_id
                     }
-                }, {
-                    projection: {
-                        _id: 0
-                    }
-                })
+                }
+            }, {
+                projection: {
+                    _id: 0
+                }
+            })
                 .toArray().then(result => {
                     // logger2.info(result);
                     if (result.length > 0) {
@@ -538,7 +548,7 @@ function clearSubs(context, group_id) {
     }).catch(err => logger2.error(new Date().toString() + ":" + err + ",bili checkWeiboSubs error, group_id= " + group_id));
 }
 
-function sender(context, dynamicObj = {}, at = false) {
+function sender(context, url, dynamicObj = {}, at = false, index = 0) {
     let payload = [];
     if (Object.keys(dynamicObj).length != 0) {
         for (let item in dynamicObj) {
@@ -554,8 +564,17 @@ function sender(context, dynamicObj = {}, at = false) {
                 payload.push(rt_payload.join("\n"));
             } else if (dynamicObj[item] != 0) payload.push(dynamicObj[item]);
         }
-        logger2.info(payload.join("\n"));
-        replyFunc(context, payload.join("\n"), at);
+        if (index == 0) {
+            logger2.info(payload.join("\n") + "\n" + url);
+            replyFunc(context, payload.join("\n"), at);
+            replyFunc(context, url, at);
+        }
+        else {
+            logger2.info(index + "\n" + payload.join("\n") + "\n" + url);
+            replyFunc(context, index + "\n" + payload.join("\n"), at);
+            replyFunc(context, index + "\n" + url, at);
+        }
+
     }
 }
 
@@ -566,7 +585,15 @@ function rtBilibili(context, name = "", num = 0, dynamic_id = "") {
             else {
                 //logger2.info(dynamic);
                 let clean_dynamic = dynamicProcess(dynamic);
-                sender(context, clean_dynamic);
+                let dynamicObj2 = {
+                    name: clean_dynamic.name,
+                    text: clean_dynamic.text,
+                    pics: clean_dynamic.pics,
+                    video: clean_dynamic.video,
+                    rt_dynamic: clean_dynamic.rt_dynamic,
+                };
+                let url = clean_dynamic.url;
+                sender(context, url, dynamicObj2);
             }
         });
     } else if (name != "") {
@@ -579,7 +606,15 @@ function rtBilibili(context, name = "", num = 0, dynamic_id = "") {
                 getDynamicList(name_card.mid, num).then(dynamic => {
                     //logger2.info(dynamic);
                     let clean_dynamic = dynamicProcess(dynamic);
-                    sender(context, clean_dynamic);
+                    let dynamicObj2 = {
+                        name: clean_dynamic.name,
+                        text: clean_dynamic.text,
+                        pics: clean_dynamic.pics,
+                        video: clean_dynamic.video,
+                        rt_dynamic: clean_dynamic.rt_dynamic,
+                    };
+                    let url = clean_dynamic.url;
+                    sender(context, url, dynamicObj2);
                 });
             }
         });
@@ -638,11 +673,11 @@ function bilibiliCheck(context) {
     if (/^看看.+?B站$/i.test(context.message)) {
         var num = 1;
         var name = "";
-        if (/置顶/.test(context.message))(num = -1);
-        else if (/最新/.test(context.message))(num = 0);
-        else if (/上上上条/.test(context.message))(num = 3);
-        else if (/上上条/.test(context.message))(num = 2);
-        else if (/上一?条/.test(context.message))(num = 1);
+        if (/置顶/.test(context.message)) (num = -1);
+        else if (/最新/.test(context.message)) (num = 0);
+        else if (/上上上条/.test(context.message)) (num = 3);
+        else if (/上上条/.test(context.message)) (num = 2);
+        else if (/上一?条/.test(context.message)) (num = 1);
         else if (/第.+?条/.test(context.message)) {
             let temp = /第([0-9]?[一二三四五六七八九]?)条/.exec(context.message);
             if (temp != null) {
@@ -650,17 +685,17 @@ function bilibiliCheck(context) {
             } else {
                 temp = 0;
             }
-            if (temp == 0 || temp == "零")(num = 0);
-            else if (temp == 1 || temp == "一")(num = 0);
-            else if (temp == 2 || temp == "二")(num = 1);
-            else if (temp == 3 || temp == "三")(num = 2);
-            else if (temp == 4 || temp == "四")(num = 3);
-            else if (temp == 5 || temp == "五")(num = 4);
-            else if (temp == 6 || temp == "六")(num = 5);
-            else if (temp == 7 || temp == "七")(num = 6);
-            else if (temp == 8 || temp == "八")(num = 7);
-            else if (temp == 9 || temp == "九")(num = 8);
-        } else(num = 0);
+            if (temp == 0 || temp == "零") (num = 0);
+            else if (temp == 1 || temp == "一") (num = 0);
+            else if (temp == 2 || temp == "二") (num = 1);
+            else if (temp == 3 || temp == "三") (num = 2);
+            else if (temp == 4 || temp == "四") (num = 3);
+            else if (temp == 5 || temp == "五") (num = 4);
+            else if (temp == 6 || temp == "六") (num = 5);
+            else if (temp == 7 || temp == "七") (num = 6);
+            else if (temp == 8 || temp == "八") (num = 7);
+            else if (temp == 9 || temp == "九") (num = 8);
+        } else (num = 0);
         //正则表达式无法处理看看星街彗星第11条B站，会分离出星街彗星第11作为名字
         name = /看看(.+?)的?((第[0-9]?[一二三四五六七八九]?条)|(上{1,3}一?条)|(置顶)|(最新))?B站/i.exec(context.message)[1]; //logger2.info(/看看(.+?)的?((第[0-9]?[一二三四五六七八九]?条)|(上*条)|(置顶)|(最新))?B站/i.exec(context.message));
         //logger2.info(num);
@@ -675,7 +710,7 @@ function bilibiliCheck(context) {
         logger2.info("看看b站3");
         rtBiliByB23(context);
         return true;
-    } else if (/^订阅.+?B站([>＞](仅转发|只看图|全部|视频更新))?/i.test(context.message)) {
+    } else if (/^订阅.+?[Bb]站([>＞](仅转发|只看图|全部|视频更新))?/i.test(context.message)) {
         if (/owner|admin/.test(context.sender.role) == false) {
             replyFunc(context, '无权限');
             return true;
@@ -685,24 +720,24 @@ function bilibiliCheck(context) {
                 name,
                 option_nl
             }
-        } = /订阅(?<name>.+?)B站([>＞](?<option_nl>仅转发|只看图|视频更新|全部))?/i.exec(context.message);
+        } = /订阅(?<name>.+?)[Bb]站([>＞](?<option_nl>仅转发|只看图|视频更新|全部))?/i.exec(context.message);
         logger2.info(`${context.group_id} ${name} 添加B站订阅`);
         if (option_nl == undefined) option_nl = "仅原创"
         addBiliSubscribe(context, name, option_nl);
         return true;
-    } else if (/^取消订阅.+?B站$/i.test(context.message)) {
+    } else if (/^取消订阅.+?[Bb]站$/i.test(context.message)) {
         if (/owner|admin/.test(context.sender.role) == false) {
             replyFunc(context, '无权限');
             return true;
         }
-        let name = /取消订阅(.+?)B站$/i.exec(context.message)[1];
+        let name = /取消订阅(.+?)[Bb]站$/i.exec(context.message)[1];
         logger2.info(`${context.group_id} ${name} B站订阅取消`);
         rmBiliSubscribe(context, name);
         return true;
-    } else if (/^查看(订阅B站|B站订阅)$/i.test(context.message)) {
+    } else if (/^查看(订阅[Bb]站|[Bb]站订阅)$/i.test(context.message)) {
         checkBiliSubs(context);
         return true;
-    } else if (/^清空B站订阅$/.test(context.message)) {
+    } else if (/^清空[Bb]站订阅$/.test(context.message)) {
         if (/owner|admin/.test(context.sender.role)) clearSubs(context, context.group_id);
         else replyFunc(context, '无权限');
         return true;

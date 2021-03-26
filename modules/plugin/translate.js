@@ -659,7 +659,7 @@ var j = schedule.scheduleJob('0 0 0 * * *' /*rule*/, async function () {
     );
 
     let t = new Date();
-    logger.info('翻译字数统计:' + `今日有道翻译3:\n使用次数:${tempday1}\n使用字数:${temp2day1}\n失败次数:${failtemp1}\n大失败次数:${bigfailtemp1}\n今日百度翻译3:\n使用次数:${tempday2}\n使用字数:${temp2day2}\n大失败次数:${bigfailtemp2}\n今日腾讯翻译3:\n使用次数:${tempday3}\n使用字数:${temp3day3}\n大失败次数:${bigfailtemp3}` + t.toString() + dayjs(t.toString()).format(' A 星期d').replace("星期0", "星期天"));
+    logger2.info('翻译字数统计:' + `今日有道翻译3:\n使用次数:${tempday1}\n使用字数:${temp2day1}\n失败次数:${failtemp1}\n大失败次数:${bigfailtemp1}\n今日百度翻译3:\n使用次数:${tempday2}\n使用字数:${temp2day2}\n大失败次数:${bigfailtemp2}\n今日腾讯翻译3:\n使用次数:${tempday3}\n使用字数:${temp3day3}\n大失败次数:${bigfailtemp3}` + t.toString() + dayjs(t.toString()).format(' A 星期d').replace("星期0", "星期天"));
 });
 //j.cancel();
 //https://www.cnblogs.com/ytu2010dt/p/5486854.html
