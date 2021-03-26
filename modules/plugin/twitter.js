@@ -291,7 +291,7 @@ async function getSingleTweet(tweet_id_str) {
         timeout: 10000
     }).then(res => {
         /**
-       rate-limit
+    rate-limit
 rate-limit 限制了用户在一定时间内请求的次数，并且会在相对时间后重置，在twitter，这个时间是15分钟。
 根据上文我们可以知道twitter是通过x-guest-token判断rate-limit的，在用户的每次请求所返回的header上都会有以下内容
 x-rate-limit-limit: 180
@@ -304,7 +304,7 @@ https://blog.ailand.date/2020/02/26/how-to-crawl-twitter/
         logger2.info("getSingleTweet/x-rate-limit-limit: " + res.headers["x-rate-limit-limit"]);
         logger2.info("getSingleTweet/x-rate-limit-remaining: " + res.headers["x-rate-limit-remaining"]);
         logger2.info("getSingleTweet/x-rate-limit-reset: " + res.headers["x-rate-limit-reset"]);
-        logger2.info(JSON.stringify(res.data));
+        //logger2.info(JSON.stringify(res.data));
         return res.data;
     }).catch(err => {
         logger2.error(new Date().toString() + ",推特2：" + JSON.stringify(err.response.data));
@@ -357,7 +357,7 @@ async function getUserTimeline(user_id, count = 20, include_rt = 0, include_rp =
         headers: httpHeader(),
         params: {
             // screen_name : screen_name,
-            "userId": user_id,
+            "userId": user_id,    //https://twitter.com/intent/user?user_id=
             "count": count,
             "include_tweet_replies": include_rp,
             "include_want_retweets": include_rt,
@@ -376,28 +376,64 @@ async function getUserTimeline(user_id, count = 20, include_rt = 0, include_rp =
         proxy: proxy2,
         timeout: 10000
     }).then(res => {
-        logger2.info("twitter_userid  :" + user_id);
+        //logger2.info("twitter_userid  :" + user_id);
         logger2.info("getUserTimeline/x-rate-limit-limit: " + res.headers["x-rate-limit-limit"]);
         logger2.info("getUserTimeline/x-rate-limit-remaining: " + res.headers["x-rate-limit-remaining"]);
         logger2.info("getUserTimeline/x-rate-limit-reset: " + res.headers["x-rate-limit-reset"]);
-        //logger2.info(JSON.stringify(res.data));
+        //logger2.info("timeline:"+JSON.stringify(res.data));
         let tweets = [];
-        let user = res.data.globalObjects.users[user_id];
+        let owner = res.data.globalObjects.users[user_id];
+
         for (let tweetid of Object.keys(res.data.globalObjects.tweets)) {
-            let tweet = res.data.globalObjects.tweets[tweetid];
+            //获取推特
+            let tweet = res.data.globalObjects.tweets[tweetid];//获取单条推特
+            let twitterid = "";
+            let user_mentions = tweet.entities.user_mentions;
+            if (user_mentions != null) {
+                twitterid = user_mentions[0].id_str;//RT @ entities.user_mentions[0].id_str 转发的原用户id位置
+            }
+            else {
+                twitterid = tweet.user_id_str;//user_id_str 自己发的推特
+            }
+
+            let user = res.data.globalObjects.users[twitterid];
+
+            //logger2.info("owner:" + JSON.stringify(owner));
+            //logger2.info("user:" + JSON.stringify(user));
             tweet.user = {
-                name: user.name,
-                screen_name: user.screen_name,
-                headpic: user.profile_image_url_https,
-                pinned: user.pinned_tweet_ids_str
+                name1: owner.name,
+                screen_name1: owner.screen_name,
+                id_str1: owner.id_str,
+                headpic1: owner.profile_image_url_https,
+                pinned1: owner.pinned_tweet_ids_str,
+                name2: user.name,
+                screen_name2: user.screen_name,
+                id_str2: twitterid,
+                headpic2: user.profile_image_url_https,
+                pinned2: user.pinned_tweet_ids_str,
             };
+            //昵称 订阅推特           
+            //名字
+            //推特用户id
+            //用户头像
+            //该用户置顶推特id
+            //昵称 转推
+            //名字
+            //推特用户id
+            //用户头像
+            //该用户置顶推特id
             tweets.push(tweet);
         }
+        //logger2.info("tweets:" + JSON.stringify(tweets))
         tweets = tweets.sort((a, b) => { return (a.id_str > b.id_str) ? -1 : 1; });
-        //logger2.info(JSON.stringify(tweets))
         return tweets;
     }).catch(err => {
-        logger2.error(new Date().toString() + ",twitter getUserTimeline error:" + JSON.stringify(err.response.data));
+        try {
+            //logger2.error(new Date().toString() + ",twitter getUserTimeline error1:" + JSON.stringify(err));
+        }
+        catch (e) {
+            //logger2.error(new Date().toString() + ",twitter getUserTimeline error2:" + err);
+        }
         //{"message":"Internal error","code":131}
         //{"message":"Rate limit exceeded","code":88}
         //{"message":"Sorry, that page does not exist","code":34}
@@ -437,8 +473,6 @@ async function searchUser(name) {
         return false;
     })
 }
-
-
 
 /**
  * 增加订阅
@@ -588,7 +622,8 @@ function unSubscribe(/*name,*/ uid, context) {
  * 每过x分钟检查一次订阅列表，如果订阅一个Twitter账号的群的数量是0就删除
  */
 async function checkTwiTimeline() {
-    if (!connection) return;
+    return;
+    //if (!connection) return;
     const mongo = await mongodb(DB_PATH, { useUnifiedTopology: true }).connect();
     const twitter_db = mongo.db('bot').collection('twitter');
     let subscribes = await twitter_db.find({}).toArray();
@@ -632,7 +667,7 @@ async function checkTwiTimeline() {
                         if (tweet_list != undefined && tweet_list.length > 0 && tweet_list[0].id_str > curr_s.tweet_id) {
                             tweet_list = tweet_list.filter(t => t.id_str > curr_s.tweet_id);
                             let groups = curr_s.groups;
-                            let url_list = [];
+                            //let url_list = [];
                             for (let group_id of groups) {//按群发送
                                 let option = false;
                                 let post = false;
@@ -644,32 +679,40 @@ async function checkTwiTimeline() {
                                 }
                                 if (!option) throw `Twitter转发时出错，${group_id}这个组没有配置`;
                                 else post = opt_dict(option.post);
+                                let iii = 0;
+                                //logger2.info("tweet_list:"+tweet_list.length);
                                 for (let tweet of tweet_list) {
                                     let status = checkStatus(tweet);
                                     if (needPost(status, post)) {
-                                        let url = `https://twitter.com/${tweet.user.screen_name}/status/${tweet.id_str}`;
+                                        let temp = tweet.user.screen_name1 == tweet.user.screen_name2 ? tweet.user.screen_name1 : tweet.user.screen_name2;
+                                        let url = `https://twitter.com/${temp}/status/${tweet.id_str}`;
                                         let addon = [];
                                         if (status != "retweet") {
                                             if (option.notice != undefined) addon.push(`${option.notice}`);
-                                            url_list.push(url);
+                                            //url_list.push(url);
                                         }
                                         if (ii[group_id] == undefined) {
                                             ii[group_id] = 1;
                                         }
                                         addon.push(url);
                                         const context = { group_id: group_id, message_type: "group" };
-                                        format(tweet, curr_s.uid, false, false, 0, context).then(payload => {
-                                            payload = ii[context.group_id] + "\n" + payload;
-                                            replyFunc(context, ii[group_id] + `, https://twitter.com/${tweet.user.screen_name}/status/${tweet.id_str}`);
-                                            ii[context.group_id] = ii[context.group_id] + 1;
+                                        //logger2.info("format:" + JSON.stringify(tweet));
+                                        logger2.info("format:6666666666666666666666666666666666666666666666666666666666");
+                                        format(tweet, curr_s.uid, false, false, iii, ii[group_id]).then(payload => {
+                                            //replyFunc(context, ii[group_id] + `, https://twitter.com/${temp}/status/${tweet.id_str}`);
                                             if (video3[tweet.id_str.toString()] != undefined) {//视频
                                                 replyFunc(context, video3[tweet.id_str.toString()]);
                                             }
                                             payload += `\n\n${addon.join("\n")}`
-                                            replyFunc(context, payload);
+                                            logger2.info("format:1111111111111111111111111111111111111111");
+                                            //logger2.info(payload);
+                                            //replyFunc(context, ii[context.group_id] + "\n" + payload);
+                                            ii[context.group_id] = ii[context.group_id] + 1;
+                                            iii++;
                                         }).catch(err => logger2.error(new Date().toString() + ",推特6：" + err));
                                     }
                                 }
+                                ii[group_id] = 1;
                                 video3 = null;
                                 video3 = new Array();
                                 //logger2.info("video3: " + video3);
@@ -680,9 +723,11 @@ async function checkTwiTimeline() {
                             //不好办啊
                             setTimeout(updateTwitter, 500, tweet_list, curr_s);//更新mongo数据库数据
                         }
-                    } catch (err) {
+                    }
+                    catch (err) {
                         logger2.error(new Date().toString() + ",推特：" + err + ',' + JSON.stringify(subscribes[i]));
-                    } finally {
+                    }
+                    finally {
                         i++;
                         if (i < subscribes.length) {
                             checkEach();
@@ -731,8 +776,7 @@ async function checkTwiTimeline() {
                 { $set: { tweet_id: tweet_list[0].id_str, name: tweet_list[0].user.name } })
                 .then(result => {
                     if (result.result.ok != 1 && result.result.nModified < 1) {
-                        logger2.error(tweet_list[0].id_str, subscribe.tweet_id, tweet_list[0].user.name,
-                            result, "\n twitter_db update error during checkTwitter");
+                        logger2.error(tweet_list[0].id_str, subscribe.tweet_id, tweet_list[0].user.name, result, "\n twitter_db update error during checkTwitter");
                     }
                 })
                 .catch(err => logger2.error(err + "\n twitter_db update error during checkTwitter"));
@@ -753,20 +797,22 @@ function checkSubs(context) {
     }).connect().then(async mongo => {
         let TWI = mongo.db('bot').collection('twitter');
         const group_option = mongo.db('bot').collection('group_option');
-        let matchs = await TWI.find({
-            groups: {
-                $in: [group_id]
-            }
-        }).toArray();
-        let uid = matchs[0] != null ? matchs[0].uid : "";//https://twitter.com/intent/user?user_id=
-        //logger2.info("twitter_db:" + uid);
         let options = await group_option.findOne({
-            group_id: group_id
+            group_id: group_id,
         });
         let subs = [];
         for (let sub in options.twitter) {
             let name = options.twitter[sub].name;
+            //logger2.info(JSON.stringify(options.twitter[sub]));
             let option_nl = toOptNl(options.twitter[sub]);
+            let matchs = await TWI.find({
+                groups: {
+                    $in: [group_id]
+                },
+                username: options.twitter[sub].username,
+            }).toArray();
+            let uid = matchs[0] != null ? matchs[0].uid : "";//https://twitter.com/intent/user?user_id=
+            //logger2.info("twitter_db:" + uid);
             subs.push(`${name}，推特用户id：${uid}，模式为${option_nl}`)
         }
         if (subs.length < 1) {
@@ -856,19 +902,27 @@ async function downloadvideo(url, context) {
  * @param {object} context 用于发送的context
  * @returns Promise  排列完成的Tweet String
  */
-async function format(tweet, useruid = -1, end_point = false, retweeted = false, headpicshu1 = 0, context = false) {
+async function format(tweet, useruid = -1, end_point = false, retweeted = false, headpicshu1 = 0, picshu2 = 0) {
     if (!tweet) return "Twitter转发时错误";
     let payload = [];
     let text = "";
     let headpicshu2 = headpicshu1;
-    if ('full_text' in tweet) text = tweet.full_text;
+    let name = (tweet.user.name1 == tweet.user.name2 ? tweet.user.name1 : tweet.user.name2) || tweet.user.name;
+    let headpic2 = (tweet.user.headpic1 == tweet.user.headpic2 ? tweet.user.headpic1 : tweet.user.headpic2) || tweet.user.profile_image_url_https;
+    //logger2.info("tweet.user:" + JSON.stringify(tweet));
+    if ("full_text" in tweet) text = tweet.full_text;
     else text = tweet.text;
     text = text.replace(/&amp;/g, "&").replace(/&#91;/g, "[").replace(/&#93;/g, "]").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
-    logger2.info("1");
+    picshu2 = picshu2.toString();
+    logger2.info("picshu2:" + picshu2);
     try {
         if ("retweeted_status" in tweet) {
+            //logger2.info("转发:" + await getSingleTweet(tweet.retweeted_status_id_str));
+            //let rt_status = await format(await getSingleTweet(tweet.retweeted_status_id_str), -1, false, true, 0, "retweeted");
+            logger2.info("format:777777777777777777777777777777777777777777777777777777777777777777777");
+
             let rt_status = await format(tweet.retweeted_status, -1, false, true);
-            payload.push(`来自${tweet.user.name}${useruid != -1 & retweeted == false ? "(推特用户id：" + useruid + ")的twitter\n转推了" : ""}`, rt_status);
+            payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(headpic2.replace("_normal", "_bigger"), ("headpic" + picshu2), headpicshu1)}]\n来自${name}的twitter\n转推了`, rt_status);//${useruid != -1 & retweeted == false ? "的twitter\n转推了" : ""}
             return payload.join("\n");
         }
         let pics = "";
@@ -883,15 +937,15 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                             //src = [media[i].media_url_https.substring(0, media[i].media_url_https.length - 4), '?format=jpg&name=4096x4096'].join("");
                             src = [media[i].media_url_https.substring(0, media[i].media_url_https.length - 4), (media[i].media_url_https.search("jpg") != -1 ? '?format=jpg&name=orig' : '?format=png&name=orig')].join(""); //?format=png&name=orig 可能出现这种情况
                             let temp = await sizeCheck(src);
-                            pics += (temp == true ? `[CQ:image,cache=0,file=file:///${await downloadx(src, "photo", i)}]` : `[CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https, "photo", i)}] 注：这不是原图,原图大小为${temp}`);
+                            pics += (temp == true ? `[CQ:image,cache=0,file=file:///${await downloadx(src, ("photo" + picshu2), i)}]` : `[CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https, ("photo" + picshu2), i)}] 注：这不是原图,原图大小为${temp}`);
                             logger2.info("src:" + src + " , media[i].media_url_https:" + media[i].media_url_https + `图片大小为${temp}MB`);
                         }
                         else if (media[i].type == "animated_gif") {
                             try {
                                 logger2.info("media[i].video_info.variants[0].url:" + media[i].video_info.variants[0].url);
                                 let gifpath0 = __dirname; //获取twitter.js文件的绝对路径
-                                let gifpath = await downloadx(media[i].video_info.variants[0].url, "animated_gif", i); //下载gif视频并获得本地路径
-                                let gifpath2 = await downloadx(media[i].media_url_https, "animated_gif", i); //gif第一帧封面
+                                let gifpath = await downloadx(media[i].video_info.variants[0].url, ("animated_gif" + picshu2), i); //下载gif视频并获得本地路径
+                                let gifpath2 = await downloadx(media[i].media_url_https, ("animated_gif" + picshu2), i); //gif第一帧封面
                                 await exec(`ffmpeg -i ${gifpath} -loop 0 -y ${gifpath0}/temp.gif`)
                                     .then(async ({
                                         stdout,
@@ -924,12 +978,12 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                                                 } catch (err) {
                                                     logger2.error(new Date().toString() + ",判断gif的总帧数：" + err);
                                                 }
-                                            } else pics += `这是一张动图[CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https, "animated_gif", i)}]` + `动起来看这里${media[i].video_info.variants[0].url}`;
+                                            } else pics += `这是一张动图[CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https, ("animated_gif" + picshu2), i)}]` + `动起来看这里${media[i].video_info.variants[0].url}`;
                                         }
                                     })
                             } catch (err) {
                                 logger2.error(new Date().toString() + ",推特动图：" + err);
-                                pics += `这是一张动图 [CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https, "animated_gif", i)}]` + `动起来看这里${media[i].video_info.variants[0].url}`;
+                                pics += `这是一张动图 [CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https, ("animated_gif" + picshu2), i)}]` + `动起来看这里${media[i].video_info.variants[0].url}`;
                             }
                             logger2.info("media[i].media_url_https:" + media[i].media_url_https);
                         }
@@ -944,9 +998,9 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                             logger2.info("media[i].media_url_https:" + media[i].media_url_https);
                             let tmp = await sizeCheck(media[i].media_url_https, false);
                             if (tmp == true) {
-                                let temp = await downloadx(media[i].media_url_https, "video", i);
+                                let temp = await downloadx(media[i].media_url_https, ("video" + picshu2), i);
                                 if (video3[tweet.id_str.toString()] == undefined) {
-                                    video3[tweet.id_str.toString()] = `[CQ:video,cache=0,file=file:///${await downloadx(mp4obj[0].url, "video2", i)},cover=file:///${temp},c=3]`;
+                                    video3[tweet.id_str.toString()] = `[CQ:video,cache=0,file=file:///${await downloadx(mp4obj[0].url, ("video2" + picshu2), i)},cover=file:///${temp},c=3]`;
                                     payload.push(`[CQ:image,cache=0,file=file:///${temp}]`,
                                         `视频地址: ${mp4obj[0].url}`);
                                 }
@@ -966,6 +1020,8 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
         if (!end_point && "is_quote_status" in tweet && tweet.is_quote_status == true) {
             let quote_tweet = await getSingleTweet(tweet.quoted_status_id_str);
             headpicshu2++;
+            logger2.info("format:88888888888888888888888888888888888888888");
+
             payload.push("提到了", await format(quote_tweet, -1, false, true, headpicshu2));
             text = text.replace(tweet.quoted_status_permalink.url, "");
         }
@@ -974,6 +1030,8 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
         if ("in_reply_to_status_id" in tweet && tweet.in_reply_to_status_id != null && !end_point) {
             let reply_tweet = await getSingleTweet(tweet.in_reply_to_status_id_str);
             headpicshu2++;
+            logger2.info("format:9999999999999999999999999999999999999999999");
+
             payload.push("回复了", await format(reply_tweet, -1, false, true, headpicshu2));
         }
         let ii = 0;
@@ -983,7 +1041,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                 let i = 0;
                 if ("image_large" in tweet.card.binding_values) {
                     logger2.info("tweet.card.binding_values.image_large.url:" + tweet.card.binding_values.image_large.url);
-                    payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.image_large.url, "image_large", i)}]`);
+                    payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.image_large.url, ("image_large" + picshu2), i)}]`);
                     i++;
                 }
                 /*let end_time = new Intl.DateTimeFormat('zh-Hans-CN', {
@@ -1015,10 +1073,10 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                     let temp = await sizeCheck(tweet.card.binding_values.photo_image_full_size_original.image_value.url);
                     if (temp == true) {
                         logger2.info("tweet.card.binding_values.photo_image_full_size_original.image_value.url:" + tweet.card.binding_values.photo_image_full_size_original.image_value.url);
-                        payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.photo_image_full_size_original.image_value.url, "photo_image_full", ii)}]`);
+                        payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.photo_image_full_size_original.image_value.url, ("photo_image_full" + picshu2), ii)}]`);
                     } else {
                         logger2.info("tweet.card.binding_values.photo_image_full_size_large.image_value.url:" + tweet.card.binding_values.photo_image_full_size_large.image_value.url + ` , 原图片大小为${temp}`);
-                        payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.photo_image_full_size_large.image_value.url, "photo_image_full", ii)}]\n原图片大小为${temp}`);
+                        payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.photo_image_full_size_large.image_value.url, ("photo_image_full" + picshu2), ii)}]\n原图片大小为${temp}`);
                     }
                     ii++;
                 }
@@ -1050,11 +1108,11 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
         }
         logger2.info("5");
         //logger2.info(JSON.stringify(tweet.user));
-        let headpic2 = tweet.user.headpic || tweet.user.profile_image_url_https;
-        payload.unshift(`[CQ:image,cache=0,file=file:///${await downloadx(headpic2.replace("_normal", "_bigger"), "headpic", headpicshu1)}]\n${tweet.user.name}${useruid != -1 & retweeted == false ? "(推特用户id：" + useruid + ")的twitter\n更新了" : ""}`, text);
+        //if (retweeted == false) {
+        payload.unshift(`[CQ:image,cache=0,file=file:///${await downloadx(headpic2.replace("_normal", "_bigger"), "headpic", headpicshu1)}]\n${name}${useruid != -1 && retweeted == false ? "的twitter\n更新了" : "的twitter\n"}`, text);
+        //}
         //是反着发的
         logger2.info("6");
-
         return payload.join("\n");
     }
     catch (err) {
@@ -1099,16 +1157,17 @@ function rtTimeline(context, name, num) {
                 tweets = [];
                 logger2.info(JSON.stringify(timeline[0].user));
                 if (num == -1) { //获取置顶推
-                    logger2.info(JSON.stringify("置顶贴:" + timeline[0].user.pinned[0]));
-                    if (timeline[0].user.pinned[0] == undefined) {
+                    logger2.info(JSON.stringify("置顶贴:" + timeline[0].user.pinned1[0]));
+                    if (timeline[0].user.pinned1[0] == undefined) {
                         replyFunc(context, "该用户没有置顶的推特");
                     }
-                    getSingleTweet(timeline[0].user.pinned[0]).then(tweet => {
+                    let temp = timeline[0].user.pinned1[0];// == timeline[0].user.pinned2[0] ? timeline[0].user.pinned1[0] : timeline[0].user.pinned2[0];
+                    getSingleTweet(temp).then(tweet => {
                         format(tweet).then(tweet_string => {
-                            logger2.info(tweet_string);
-                            replyFunc(context, tweet_string);
-                            if (video3[timeline[0].user.pinned[0].toString()] != undefined) {
-                                replyFunc(context, video3[timeline[0].user.pinned[0].toString()]);
+                            logger2.info("rtTimeline:" + tweet_string);
+                            replyFunc(context, tweet_string + "\n" + `https://twitter.com/${tweet.user.screen_name}/status/${tweet.id_str}`);
+                            if (video3[temp.toString()] != undefined) {
+                                replyFunc(context, video3[temp.toString()]);
                             }
                             temp2 = null;
                             temp2 = new Array();
@@ -1142,15 +1201,16 @@ function rtTimeline(context, name, num) {
                 }
                 if (tweets.length < num) tweets = timeline;
                 let choose_one = tweets[num];
+                let temp = choose_one.user.screen_name1 == choose_one.user.screen_name2 ? choose_one.user.screen_name1 : choose_one.user.screen_name2;
                 //choose_one.user = { name: user.name };
                 format(choose_one).then(tweet_string => {
-                    let payload = [tweet_string, `https://twitter.com/${user.screen_name}/status/${choose_one.id_str}`].join('\n\n');
-                    logger2.info(payload);
+                    //logger2.info("choose_one:"+JSON.stringify(choose_one));
+                    let payload = [tweet_string, `https://twitter.com/${temp}/status/${choose_one.id_str}`].join('\n\n');
                     replyFunc(context, payload);
                     if (video3[choose_one.id_str.toString()] != undefined) {
                         replyFunc(context, video3[choose_one.id_str.toString()]);
                     }
-                    //logger2.info("2: " + temp2);
+                    logger2.info("payload: " + payload);
                     temp2 = null;
                     temp2 = new Array();
                     video3 = null;
@@ -1187,8 +1247,8 @@ function rtTimeline(context, name, num) {
 
 function rtSingleTweet(tweet_id_str, context) {
     getSingleTweet(tweet_id_str).then(tweet => {
-        format(tweet, -1, false, true, 0, context).then(tweet_string => {
-            logger2.info(tweet_string);
+        format(tweet, -1, false, true, 0).then(tweet_string => {
+            logger2.info("tweet_string:" + tweet_string);
             replyFunc(context, tweet_string);
             if (video3[tweet_id_str.toString()] != undefined) {
                 replyFunc(context, video3[tweet_id_str.toString()]);
@@ -1229,7 +1289,9 @@ async function addSub(name, option_nl, context) {
         replyFunc(context, "未发现该用户或者输入0-9之外的数字", true);
         return true;
     }
+    //logger2.info("option_nl1:"+option_nl);
     if (option_nl == undefined) option_nl = "仅原创";
+    //logger2.info("option_nl2:"+option_nl);
     let option_list = option_nl.split(/[;；]/).filter((noEmpty) => { return noEmpty != undefined });
     let option = {
         username: user.screen_name,
@@ -1243,24 +1305,25 @@ async function addSub(name, option_nl, context) {
             replyFunc(context, `没有${opt}这个选项`, true);
             return true;
         }
-        /*else {//大概是at机器人才反应
+        else {
             if (opt_inter == "notice") {
                 let people = opt_[1].trim();
                 if (!/\[CQ:at/.test(people)) {
-                    replyFunc(context, "你这提醒区怎么一个at都么有搞mea?", true);
+                    //replyFunc(context, "你这提醒区怎么一个at都么有搞mea?", true);
                     return true;
                 }
                 option.notice = people;
             }
             else option.post = opt_inter;
-        }*/
+        }
     }
     if (option.post == undefined) option.post = "origin_only";
+    //logger2.info("option_nl3:"+JSON.stringify(option));
     subscribe(user, option, context);
     return true;
 }
 
-function twitterAggr(context) {
+async function twitterAggr(context) {
     let gid = context.group_id;
     let uid = context.user_id;
     if (context.user_id != null) {
@@ -1323,19 +1386,21 @@ function twitterAggr(context) {
         rtSingleTweet(tweet_id, context);
         return true;
     }
-    else if (connection && /^订阅(推特|twitter)https:\/\/twitter.com\/.+(\/status\/\d+)?([>＞](.{2,}))?/i.test(context.message)) {
+    else if (connection && /^订阅(推特|twitter)https:\/\/twitter.com\/.+(\/status\/\d+)?([>＞](仅转发|只看图|包含转发|不要转发|不要回复|提醒|全部))?/i.test(context.message)) {
         let name = (/status\/\d+/.test(context.message) && /\.com\/(.+)\/status/.exec(context.message)[1] ||
             /\.com\/(.+)[>＞]/.exec(context.message)[1]);
-        let option_nl = /[>＞](?<option_nl>.{2,})/.exec(context.message)[1];
+        let option_nl = /[>＞](仅转发|只看图|包含转发|不要转发|不要回复|提醒|全部)/.exec(context.message)[1];
         if (option_nl == undefined) option_nl = "仅原创"
         addSub(name, option_nl, context);
         return true;
     }
-    else if (connection && /^订阅.+的?(推特|twitter)([>＞](?<option_nl>.{2,}))?/i.test(context.message)) {
+    else if (connection && /^订阅.+的?(推特|twitter)([>＞](仅转发|只看图|包含转发|不要转发|不要回复|提醒|全部))?/i.test(context.message)) {
         let {
             groups: {
-                name, option_nl
-            } } = /订阅(?<name>.+)的?(推特|twitter)([>＞](?<option_nl>.{2,}))?/i.exec(context.message);
+                name,
+                option_nl
+            }
+        } = /订阅(?<name>.+)的?(推特|twitter)([>＞](?<option_nl>.{2,4}))?/i.exec(context.message);
         addSub(name, option_nl, context);
         return true;
     }

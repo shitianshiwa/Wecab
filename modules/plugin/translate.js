@@ -481,7 +481,7 @@ async function translate2(str, id, youdao = false, baidu = false, tx = false) {
                     },
                     json: true
                 }).then(async data => {
-                    //logger2.info(JSON.stringify(data.trans_result));
+                    logger2.info(JSON.stringify(data.trans_result));
                     let tempday = await fanyi2day.getItem("success");
                     let temp2day = await fanyi2day.getItem("zishu"); //单日使用计数
                     if (tempday == null) {
@@ -509,7 +509,7 @@ async function translate2(str, id, youdao = false, baidu = false, tx = false) {
                     await fanyitemp2.setItem("success", temp);
                     await fanyitemp2.setItem("zishu", temp2);
                     let temp3 = "";
-                    let temp4 = data.trans_result;
+                    let temp4 = data.trans_result||"";
                     logger2.info("百度翻译的结果:" + JSON.stringify(temp4));
                     for (let i = 0; i < temp4.length; i++) {
                         temp3 += temp4[i].dst + (i < temp4.length - 1 ? "\n" : "");
@@ -541,7 +541,7 @@ async function translate2(str, id, youdao = false, baidu = false, tx = false) {
                     await fanyi2day.setItem("bigfail", temp2);
 
                     let t = new Date();
-                    logger2.info.error(temp + ". " + '百度翻译大出错:' + t.toString() + dayjs(t.toString()).format(' A 星期d') + e);
+                    logger2.error(temp + ". " + '百度翻译大出错:' + t.toString() + dayjs(t.toString()).format(' A 星期d') + e);
                     resolve("");
                     //reject(temp + ". " + "百度翻译大出错");
                 })
