@@ -416,6 +416,7 @@ async function getUserTimeline(user_id, count = 20, include_rt = 0, include_rp =
             /*        logger2.info("2," + tweet.user_id_str)
                       logger2.info("3," + twitterid)
                       //logger2.info("4," + JSON.stringify(res.data.globalObjects.users))
+                      //logger2.info("owner:" + JSON.stringify(owner));
                       logger2.info("user:" + JSON.stringify(user));
                       logger2.info(owner.name);
                       logger2.info(owner.screen_name);
@@ -458,7 +459,7 @@ async function getUserTimeline(user_id, count = 20, include_rt = 0, include_rp =
             logger2.error(new Date().toString() + ",twitter getUserTimeline error1:" + JSON.stringify(err));
         }
         catch (e) {
-            //logger2.error(new Date().toString() + ",twitter getUserTimeline error2:" + err);
+            logger2.error(new Date().toString() + ",twitter getUserTimeline error2:" + err);
         }
         //{"message":"Internal error","code":131}
         //{"message":"Rate limit exceeded","code":88}
