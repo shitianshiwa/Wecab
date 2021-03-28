@@ -431,7 +431,7 @@ async function translate2(str, id, youdao = false, baidu = false, tx = false) {
                         await fanyi1day.setItem("fail", temp2);
 
                         let t = new Date();
-                        logger2.info.error(temp + ". " + '有道翻译出错:' + t.toString() + dayjs(t.toString()).format(' A 星期d') + JSON.stringify(data));
+                        logger2.error(temp + ". " + '有道翻译出错:' + t.toString() + dayjs(t.toString()).format(' A 星期d') + JSON.stringify(data));
                         resolve("");
                         //reject(temp + ". " + "有道翻译出错");
                     }
@@ -450,7 +450,7 @@ async function translate2(str, id, youdao = false, baidu = false, tx = false) {
                     temp2++;
                     await fanyi1day.setItem("bigfail", temp2);
                     let t = new Date();
-                    logger2.info.error(temp + ". " + '有道翻译大出错:' + t.toString() + dayjs(t.toString()).format(' A 星期d') + e);
+                    logger2.error(temp + ". " + '有道翻译大出错:' + t.toString() + dayjs(t.toString()).format(' A 星期d') + e);
                     resolve("");
                     //reject(temp + ". " + "有道翻译大出错");
                 })
