@@ -62,7 +62,7 @@ let video3 = new Array();//视频链接临时储存
 let temp2 = new Array(); //翻译文本临时储存
 let suo = false; //防止下一次动作覆盖上一个动作
 let replyFunc = (context, msg, at = false) => {
-    //logger2.info("推特：" + msg)
+    //logger2.info("推特:" + msg)
 };
 if (PROXY_CONF.host.length > 0 && PROXY_CONF.port !== 0) {
     proxy2 = {
@@ -595,7 +595,7 @@ function unSubscribe(/*name,*/ uid, context) {
             }
         },
             async (err, result) => {
-                if (err) logger2.error(new Date().toString() + ",推特：" + err + ",database subscribes delete error");
+                if (err) logger2.error(new Date().toString() + ",推特:" + err + ",database subscribes delete error");
                 else {
                     let text = "";
                     if (result.value == null || !result.value.groups.includes(group_id)) text = "未发现任何推特订阅";
@@ -731,7 +731,7 @@ async function checkTwiTimeline() {
                                         }
                                     },
                                         (err, result) => {
-                                            if (err) logger2.error(new Date().toString() + ",推特：" + err + ",database update error during checktwitter");
+                                            if (err) logger2.error(new Date().toString() + ",推特:" + err + ",database update error during checktwitter");
                                             mongo.close();
                                         });
                                 });
