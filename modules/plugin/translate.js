@@ -509,7 +509,7 @@ async function translate2(str, id, youdao = false, baidu = false, tx = false) {
                     await fanyitemp2.setItem("success", temp);
                     await fanyitemp2.setItem("zishu", temp2);
                     let temp3 = "";
-                    let temp4 = data.trans_result||"";
+                    let temp4 = data.trans_result || "";
                     logger2.info("百度翻译的结果:" + JSON.stringify(temp4));
                     for (let i = 0; i < temp4.length; i++) {
                         temp3 += temp4[i].dst + (i < temp4.length - 1 ? "\n" : "");
@@ -654,9 +654,8 @@ var j = schedule.scheduleJob('0 0 0 * * *' /*rule*/, async function () {
 
     botFunc('send_private_msg', {
         user_id: admin,
-        message_type: "private"
-    }, `今日有道翻译3:\n使用次数:${tempday1}\n使用字数:${temp2day1}\n失败次数:${failtemp1}\n大失败次数:${bigfailtemp1}\n今日百度翻译3:\n使用次数:${tempday2}\n使用字数:${temp2day2}\n大失败次数:${bigfailtemp2}\n今日腾讯翻译3:\n使用次数:${tempday3}\n使用字数:${temp3day3}\n大失败次数:${bigfailtemp3}`
-    );
+        message: `今日有道翻译3:\n使用次数:${tempday1}\n使用字数:${temp2day1}\n失败次数:${failtemp1}\n大失败次数:${bigfailtemp1}\n今日百度翻译3:\n使用次数:${tempday2}\n使用字数:${temp2day2}\n大失败次数:${bigfailtemp2}\n今日腾讯翻译3:\n使用次数:${tempday3}\n使用字数:${temp3day3}\n大失败次数:${bigfailtemp3}`
+    });
 
     let t = new Date();
     logger2.info('翻译字数统计:' + `今日有道翻译3:\n使用次数:${tempday1}\n使用字数:${temp2day1}\n失败次数:${failtemp1}\n大失败次数:${bigfailtemp1}\n今日百度翻译3:\n使用次数:${tempday2}\n使用字数:${temp2day2}\n大失败次数:${bigfailtemp2}\n今日腾讯翻译3:\n使用次数:${tempday3}\n使用字数:${temp3day3}\n大失败次数:${bigfailtemp3}` + t.toString() + dayjs(t.toString()).format(' A 星期d').replace("星期0", "星期天"));
