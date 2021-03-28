@@ -36,21 +36,28 @@ module.exports = async function Downloadx(url, name, i, pic = true) {
         responseType: "stream",
         proxy: proxyip,
         timeout: 10000,
+    }).catch(err => {
+        logger2.info(new Date().toString() + ",获取下载资源失败:" + err);
+        return false;
     });
-    //const imgType = fileType(await streamToBuffer(response.data)).ext;
-    const mypath = path.resolve(path2, `${name + i.toString()}.${fileType2}`);
-    const writer = fs.createWriteStream(mypath);
-    response.data.pipe(writer);
-    return await new Promise(async (resolve, reject) => {
-        writer.on("finish",
-            data => {
-                logger2.info(new Date().toString() + ",下载图片成功:" + JSON.stringify(data));
-                resolve(mypath);
-            });
-        writer.on("error",
-            err => {
-                logger2.error(new Date().toString() + ",下载图片失败: " + JSON.stringify(err));
-                resolve("");
-            });
-    });
+    if (response != false) {
+        //const imgType = fileType(await streamToBuffer(response.data)).ext;
+        const mypath = path.resolve(path2, `${name + i.toString()}.${fileType2}`);
+        const writer = fs.createWriteStream(mypath);
+        response.data.pipe(writer);
+        return await new Promise(async (resolve, reject) => {
+            writer.on("finish",
+                data => {
+                    logger2.info(new Date().toString() + ",下载图片成功:" + JSON.stringify(data));
+                    resolve(mypath);
+                });
+            writer.on("error",
+                err => {
+                    logger2.error(new Date().toString() + ",下载图片失败: " + JSON.stringify(err));
+                    resolve("");
+                });
+        });
+    } else {
+        return "";
+    }
 }
