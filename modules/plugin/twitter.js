@@ -451,7 +451,10 @@ async function getUserTimeline(user_id, count = 20, include_rt = 0, include_rp =
             tweets.push(tweet);
         }
         //logger2.info("tweets:" + JSON.stringify(tweets))
-        tweets = tweets.sort((a, b) => { return (a.id_str > b.id_str) ? -1 : 1; });
+        tweets = tweets.sort((a, b) => { return (parseFloat(a.id_str) > parseFloat(b.id_str)) ? -1 : 1; });
+        /*for (let i = 0; i < tweets.length; i++) {
+            logger2.info(tweets[i].id_str)
+        }*/
         return tweets;
     }).catch(err => {
         //logger2.error(new Date().toString() + ",twitter getUserTimeline error2:" + err);
@@ -665,13 +668,15 @@ async function checkTwiTimeline() {
                         let tweet_list = await getUserTimeline(subscribes[i].uid, 10, 1, 1);
                         if (tweet_list != undefined) {
                             let last_tweet_id = subscribes[i].tweet_id; //最新一条推特id
-                            //logger2.info(tweet_list);
                             let current_id = tweet_list[0].id_str;
-                            if (current_id > last_tweet_id) {
+                            //logger2.info("tweet_list:"+JSON.stringify(tweet_list));
+                            //logger2.info("last_tweet_id:" + last_tweet_id);
+                            //logger2.info("current_id:" + current_id);
+                            if (parseFloat(current_id) > parseFloat(last_tweet_id)) {
                                 suo = true;
                                 let groups = subscribes[i].groups;
                                 for (let tweet of tweet_list) {
-                                    if (tweet.id_str > last_tweet_id) { //每一个推，一次发完所有订阅的群，直到所有推特发完
+                                    if (parseFloat(tweet.id_str) > parseFloat(last_tweet_id)) { //每一个推，一次发完所有订阅的群，直到所有推特发完
                                         let suo2 = true;
                                         groups.forEach(async group_id => {
                                             if (ii[group_id] == undefined) {
@@ -880,7 +885,7 @@ function clearSubs(context, group_id) {
 async function downloadvideo(url, context) {
     logger2.info("要发送的视频链接: " + url);
     try {
-        replyFunc(context, `[CQ:video,cache=0,file=file:///${await downloadx(url, "video2", -1,false)},cover=file:///${__dirname}/black.jpg,c=3]`)
+        replyFunc(context, `[CQ:video,cache=0,file=file:///${await downloadx(url, "video2", -1, false)},cover=file:///${__dirname}/black.jpg,c=3]`)
             .then(() => {
                 logger2.info("发送视频完成");
             }).catch(err => {
@@ -942,7 +947,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                             try {
                                 logger2.info("media[i].video_info.variants[0].url:" + media[i].video_info.variants[0].url);
                                 let gifpath0 = __dirname; //获取twitter.js文件的绝对路径
-                                let gifpath = await downloadx(media[i].video_info.variants[0].url, ("animated_gif" + headpicshu1), i,false); //下载gif视频并获得本地路径
+                                let gifpath = await downloadx(media[i].video_info.variants[0].url, ("animated_gif" + headpicshu1), i, false); //下载gif视频并获得本地路径
                                 let gifpath2 = await downloadx(media[i].media_url_https, ("animated_gif" + headpicshu1), i); //gif第一帧封面
                                 await exec(`ffmpeg -i ${gifpath} -loop 0 -y ${gifpath0}/temp.gif`)
                                     .then(async ({
@@ -998,7 +1003,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                             if (tmp == true) {
                                 let temp = await downloadx(media[i].media_url_https, ("video" + headpicshu1), i);
                                 if (video3[tweet.id_str.toString()] == undefined) {
-                                    video3[tweet.id_str.toString()] = `[CQ:video,cache=0,file=file:///${await downloadx(mp4obj[0].url, ("video2" + headpicshu1), i,false)},cover=file:///${temp},c=3]`;
+                                    video3[tweet.id_str.toString()] = `[CQ:video,cache=0,file=file:///${await downloadx(mp4obj[0].url, ("video2" + headpicshu1), i, false)},cover=file:///${temp},c=3]`;
                                     payload.push(`[CQ:image,cache=0,file=file:///${temp}]`,
                                         `视频地址: ${mp4obj[0].url}`);
                                 }
