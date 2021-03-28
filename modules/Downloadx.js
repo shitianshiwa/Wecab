@@ -1,9 +1,10 @@
 const config = require('./config');
-const fileType = require('file-type');
+//const fileType = require('file-type');
 const fs = require('fs');
 const path = require('path');
-const download = require('download');
+//const download = require('download');
 const logger2 = require('./logger2'); //日志功能
+const axios = require('axios-https-proxy-fix');
 
 //console.log(config);
 const PROXY_CONF = config.default.proxy; //发现套了一个default。。！
@@ -15,23 +16,41 @@ if (PROXY_CONF.host.length > 0 && PROXY_CONF.port !== 0) {
     }
     //"http://" + PROXY_CONF.host + ":" + PROXY_CONF.port;
 }
-module.exports = async function Downloadx(url, name, i) {
-    let fileDataArr = await new Promise(async function (resolve, reject) {
-        logger2.info("下载文件 , " + url + " , " + name + " , " + i.toString());
-        resolve(download(url, {
-            proxy: proxyip ? proxyip : false
-        }).catch(err => {
-            logger2.error(new Date().toString() + " , " + err);
-        }));
-        //https://github.com/kevva/download/commit/a16ba04b30dafbe7d9246db93f1534320d8e0dd3 v8.0.0删掉代理功能了
-    });
-    if (fileDataArr != null) {
-        const imgType = fileType(fileDataArr).ext;
-        const imgPath = path.join(__dirname, `../tmp/${name+i.toString()}.${imgType}`);
-        fs.writeFileSync(imgPath, fileDataArr);
-        logger2.info("完成下载");
-        return imgPath;
-    } else {
-        return "";
+
+module.exports = async function Downloadx(url, name, i, pic = true) {
+    logger2.info("下载文件 , " + url + " , " + name + " , " + i.toString());
+    let path2 = path.join(__dirname, `../tmp/`);
+    if (!fs.existsSync(path2)) {
+        fs.mkdirSync(path2);
     }
+    let fileType2 = "";
+    if (pic == true) {
+        fileType2 = "jpg";
+    }
+    else {
+        fileType2 = "mp4";
+    }
+    const response = await axios({
+        url,
+        method: "GET",
+        responseType: "stream",
+        proxy: proxyip,
+        timeout: 10000,
+    });
+    //const imgType = fileType(await streamToBuffer(response.data)).ext;
+    const mypath = path.resolve(path2, `${name + i.toString()}.${fileType2}`);
+    const writer = fs.createWriteStream(mypath);
+    response.data.pipe(writer);
+    return await new Promise(async (resolve, reject) => {
+        writer.on("finish",
+            data => {
+                logger2.info(new Date().toString() + ",下载图片成功:" + JSON.stringify(data));
+                resolve(mypath);
+            });
+        writer.on("error",
+            err => {
+                logger2.error(new Date().toString() + ",下载图片失败: " + JSON.stringify(err));
+                resolve("");
+            });
+    });
 }
