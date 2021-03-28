@@ -521,7 +521,7 @@ async function subscribe(user, option, context) {
     }).connect().then(async mongo => {
         let coll = mongo.db('bot').collection('twitter');
         let res = await coll.find({
-            uid: uid
+            uid: uid,
         }).toArray();
         if (res.length == 0) {
             let tweet = (await getUserTimeline(uid, 15, 1))[0];
@@ -904,7 +904,7 @@ async function downloadvideo(url, context) {
  * @param {object} context 用于发送的context
  * @returns Promise  排列完成的Tweet String
  */
-async function format(tweet, useruid = -1, end_point = false, retweeted = false, headpicshu1 = 0, picshu2 = 0) {
+async function format(tweet, useruid = -1, end_point = false, retweeted = false, headpicshu1 = 0) {
     if (!tweet) return "Twitter转发时错误";
     let payload = [];
     let text = "";
@@ -915,13 +915,12 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
     if ("full_text" in tweet) text = tweet.full_text;
     else text = tweet.text;
     text = text.replace(/&amp;/g, "&").replace(/&#91;/g, "[").replace(/&#93;/g, "]").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
-    picshu2 = picshu2.toString();
     try {
         if ("retweeted_status" in tweet) {
             //logger2.info("转发:" + await getSingleTweet(tweet.retweeted_status_id_str));
             //let rt_status = await format(await getSingleTweet(tweet.retweeted_status_id_str), -1, false, true, 0, "retweeted");
             let rt_status = await format(tweet.retweeted_status, -1, false, true);
-            payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(headpic2.replace("_normal", "_bigger"), ("headpic" + picshu2), headpicshu1)}]\n来自${name}的twitter\n转推了`, rt_status);//${useruid != -1 & retweeted == false ? "的twitter\n转推了" : ""}
+            payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(headpic2.replace("_normal", "_bigger"), "headpic", headpicshu1)}]\n来自${name}的twitter\n转推了`, rt_status);//${useruid != -1 & retweeted == false ? "的twitter\n转推了" : ""}
             return payload.join("\n");
         }
         let pics = "";
@@ -936,15 +935,15 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                             //src = [media[i].media_url_https.substring(0, media[i].media_url_https.length - 4), '?format=jpg&name=4096x4096'].join("");
                             src = [media[i].media_url_https.substring(0, media[i].media_url_https.length - 4), (media[i].media_url_https.search("jpg") != -1 ? '?format=jpg&name=orig' : '?format=png&name=orig')].join(""); //?format=png&name=orig 可能出现这种情况
                             let temp = await sizeCheck(src);
-                            pics += (temp == true ? `[CQ:image,cache=0,file=file:///${await downloadx(src, ("photo" + picshu2), i)}]` : `[CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https, ("photo" + picshu2), i)}] 注：这不是原图,原图大小为${temp}`);
+                            pics += (temp == true ? `[CQ:image,cache=0,file=file:///${await downloadx(src, ("photo" + headpicshu1), i)}]` : `[CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https, ("photo" + headpicshu1), i)}] 注：这不是原图,原图大小为${temp}`);
                             logger2.info("src:" + src + " , media[i].media_url_https:" + media[i].media_url_https + `图片大小为${temp}MB`);
                         }
                         else if (media[i].type == "animated_gif") {
                             try {
                                 logger2.info("media[i].video_info.variants[0].url:" + media[i].video_info.variants[0].url);
                                 let gifpath0 = __dirname; //获取twitter.js文件的绝对路径
-                                let gifpath = await downloadx(media[i].video_info.variants[0].url, ("animated_gif" + picshu2), i); //下载gif视频并获得本地路径
-                                let gifpath2 = await downloadx(media[i].media_url_https, ("animated_gif" + picshu2), i); //gif第一帧封面
+                                let gifpath = await downloadx(media[i].video_info.variants[0].url, ("animated_gif" + headpicshu1), i); //下载gif视频并获得本地路径
+                                let gifpath2 = await downloadx(media[i].media_url_https, ("animated_gif" + headpicshu1), i); //gif第一帧封面
                                 await exec(`ffmpeg -i ${gifpath} -loop 0 -y ${gifpath0}/temp.gif`)
                                     .then(async ({
                                         stdout,
@@ -977,12 +976,12 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                                                 } catch (err) {
                                                     logger2.error(new Date().toString() + ",判断gif的总帧数：" + err);
                                                 }
-                                            } else pics += `这是一张动图[CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https, ("animated_gif" + picshu2), i)}]` + `动起来看这里${media[i].video_info.variants[0].url}`;
+                                            } else pics += `这是一张动图[CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https, ("animated_gif" + headpicshu1), i)}]` + `动起来看这里${media[i].video_info.variants[0].url}`;
                                         }
                                     })
                             } catch (err) {
                                 logger2.error(new Date().toString() + ",推特动图：" + err);
-                                pics += `这是一张动图 [CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https, ("animated_gif" + picshu2), i)}]` + `动起来看这里${media[i].video_info.variants[0].url}`;
+                                pics += `这是一张动图 [CQ:image,cache=0,file=file:///${await downloadx(media[i].media_url_https, ("animated_gif" + headpicshu1), i)}]` + `动起来看这里${media[i].video_info.variants[0].url}`;
                             }
                             logger2.info("media[i].media_url_https:" + media[i].media_url_https);
                         }
@@ -997,9 +996,9 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                             logger2.info("media[i].media_url_https:" + media[i].media_url_https);
                             let tmp = await sizeCheck(media[i].media_url_https, false);
                             if (tmp == true) {
-                                let temp = await downloadx(media[i].media_url_https, ("video" + picshu2), i);
+                                let temp = await downloadx(media[i].media_url_https, ("video" + headpicshu1), i);
                                 if (video3[tweet.id_str.toString()] == undefined) {
-                                    video3[tweet.id_str.toString()] = `[CQ:video,cache=0,file=file:///${await downloadx(mp4obj[0].url, ("video2" + picshu2), i)},cover=file:///${temp},c=3]`;
+                                    video3[tweet.id_str.toString()] = `[CQ:video,cache=0,file=file:///${await downloadx(mp4obj[0].url, ("video2" + headpicshu1), i)},cover=file:///${temp},c=3]`;
                                     payload.push(`[CQ:image,cache=0,file=file:///${temp}]`,
                                         `视频地址: ${mp4obj[0].url}`);
                                 }
@@ -1017,12 +1016,14 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
         if (!end_point && "is_quote_status" in tweet && tweet.is_quote_status == true) {
             let quote_tweet = await getSingleTweet(tweet.quoted_status_id_str);
             headpicshu2++;
+            logger2.info("headpicshu2:" + headpicshu2);
             payload.push("提到了", await format(quote_tweet, -1, false, true, headpicshu2));
             text = text.replace(tweet.quoted_status_permalink.url, "");
         }
         if ("in_reply_to_status_id" in tweet && tweet.in_reply_to_status_id != null && !end_point) {
             let reply_tweet = await getSingleTweet(tweet.in_reply_to_status_id_str);
             headpicshu2++;
+            logger2.info("headpicshu2:" + headpicshu2);
             payload.push("回复了", await format(reply_tweet, -1, false, true, headpicshu2));
         }
         let ii = 0;
@@ -1032,7 +1033,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                 let i = 0;
                 if ("image_large" in tweet.card.binding_values) {
                     logger2.info("tweet.card.binding_values.image_large.url:" + tweet.card.binding_values.image_large.url);
-                    payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.image_large.url, ("image_large" + picshu2), i)}]`);
+                    payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.image_large.url, ("image_large" + headpicshu1), i)}]`);
                     i++;
                 }
                 /*let end_time = new Intl.DateTimeFormat('zh-Hans-CN', {
@@ -1064,10 +1065,10 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
                     let temp = await sizeCheck(tweet.card.binding_values.photo_image_full_size_original.image_value.url);
                     if (temp == true) {
                         logger2.info("tweet.card.binding_values.photo_image_full_size_original.image_value.url:" + tweet.card.binding_values.photo_image_full_size_original.image_value.url);
-                        payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.photo_image_full_size_original.image_value.url, ("photo_image_full" + picshu2), ii)}]`);
+                        payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.photo_image_full_size_original.image_value.url, ("photo_image_full" + headpicshu1), ii)}]`);
                     } else {
                         logger2.info("tweet.card.binding_values.photo_image_full_size_large.image_value.url:" + tweet.card.binding_values.photo_image_full_size_large.image_value.url + ` , 原图片大小为${temp}`);
-                        payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.photo_image_full_size_large.image_value.url, ("photo_image_full" + picshu2), ii)}]\n原图片大小为${temp}`);
+                        payload.push(`[CQ:image,cache=0,file=file:///${await downloadx(tweet.card.binding_values.photo_image_full_size_large.image_value.url, ("photo_image_full" + headpicshu1), ii)}]\n原图片大小为${temp}`);
                     }
                     ii++;
                 }
