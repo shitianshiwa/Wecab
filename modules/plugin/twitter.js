@@ -624,7 +624,7 @@ async function checkTwiTimeline() {
     //return; //未做测试警告
     let firish = false;
     let check_interval = 3 * 60 * 1000; //3分钟一次
-    let check_interval2 = 15000; //api调用延时 10秒
+    let check_interval2 = 20000; //api调用延时 20秒
     let i = 0;
     setInterval(async () => {
         if (wecab.getItem("huozhe") == "false") {
@@ -675,14 +675,14 @@ async function checkTwiTimeline() {
                             if (parseFloat(current_id) > parseFloat(last_tweet_id)) {
                                 suo = true;
                                 let groups = subscribes[i].groups;
-                                for (let tweet of tweet_list) {
+                                for (let tweet of tweet_list) {//要转发的推特数
                                     if (parseFloat(tweet.id_str) > parseFloat(last_tweet_id)) { //每一个推，一次发完所有订阅的群，直到所有推特发完
                                         let suo2 = true;
-                                        groups.forEach(async group_id => {
+                                        groups.forEach(async group_id => {//要发送的群
                                             if (ii[group_id] == undefined) {
                                                 ii[group_id] = 1;
                                             }
-                                            if (checkOption(tweet, subscribes[i][group_id])) {
+                                            if (checkOption(tweet, subscribes[i][group_id])) {//判断是否符合转发条件
                                                 await format(tweet, subscribes[i].uid, false, false, 0, ii[group_id]).then(payload => {
                                                     let temp = tweet.user.screen_name1 == tweet.user.screen_name2 ? tweet.user.screen_name1 : tweet.user.screen_name2;
                                                     //payload = ii[group_id] + "\n" + payload;
@@ -909,7 +909,7 @@ async function downloadvideo(url, context) {
  * @param {object} context 用于发送的context
  * @returns Promise  排列完成的Tweet String
  */
-async function format(tweet, useruid = -1, end_point = false, retweeted = false, headpicshu1 = 0, index = 0) {
+async function format(tweet, useruid = -1, end_point = false, retweeted = false, headpicshu1 = 0, index = 0, nocheck = false) {
     if (!tweet) return "Twitter转发时错误";
     let payload = [];
     let text = "";
@@ -925,7 +925,7 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
             //logger2.info("转发:" + await getSingleTweet(tweet.retweeted_status_id_str));
             //let rt_status = await format(await getSingleTweet(tweet.retweeted_status_id_str), -1, false, true, 0, "retweeted");
             headpicshu2++;
-            let rt_status = await format(tweet.retweeted_status, -1, false, true, headpicshu2, index);
+            let rt_status = await format(tweet.retweeted_status, -1, false, true, headpicshu2, index, nocheck);
             payload.push(/*`[CQ:image,cache=0,file=file:///${await downloadx(headpic2.replace("_normal", "_bigger"), ("headpic" + index), headpicshu1)}]\n来自${name}的twitter\n转推了`,*/ rt_status);//${useruid != -1 & retweeted == false ? "的twitter\n转推了" : ""}
             return payload.join("\n");
         }
@@ -1023,14 +1023,14 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
             let quote_tweet = await getSingleTweet(tweet.quoted_status_id_str);
             headpicshu2++;
             logger2.info("headpicshu2:" + headpicshu2);
-            payload.push("提到了", await format(quote_tweet, -1, false, true, headpicshu2));
+            payload.push("提到了", await format(quote_tweet, -1, false, true, headpicshu2, index, nocheck));
             text = text.replace(tweet.quoted_status_permalink.url, "");
         }
         if ("in_reply_to_status_id" in tweet && tweet.in_reply_to_status_id != null && !end_point) {
             let reply_tweet = await getSingleTweet(tweet.in_reply_to_status_id_str);
             headpicshu2++;
             logger2.info("headpicshu2:" + headpicshu2);
-            payload.push("回复了", await format(reply_tweet, -1, false, true, headpicshu2));
+            payload.push("回复了", await format(reply_tweet, -1, false, true, headpicshu2, index, nocheck));
         }
         let ii = 0;
         if ("card" in tweet) {
@@ -1106,10 +1106,10 @@ async function format(tweet, useruid = -1, end_point = false, retweeted = false,
         }
         //logger2.info(JSON.stringify(tweet.user));
         //if (retweeted == false) {
-        payload.unshift(`[CQ:image,cache=0,file=file:///${await downloadx(headpic2.replace("_normal", "_bigger"), ("headpic" + index), headpicshu1)}]\n${name}${useruid != -1 && retweeted == false ? "的twitter\n更新了" : "的twitter\n"}`, text);
+        payload.unshift(`[CQ:image,cache=0,file=file:///${await downloadx((nocheck == true ? (headpic2.replace("_normal", "_400x400")) : (headpic2.replace("_normal", "_bigger"))), ("headpic" + index), headpicshu1)}]\n${name}${useruid != -1 && retweeted == false ? "的twitter\n更新了" : "的twitter\n"}`, text);
         //}
         //是反着发的
-        logger2.info("payload:" + payload.join("\n"))
+        //logger2.info("payload:" + payload.join("\n"))
         return payload.join("\n");
     }
     catch (err) {
@@ -1160,7 +1160,7 @@ function rtTimeline(context, name, num) {
                     }
                     let temp = timeline[0].user.pinned1[0];// == timeline[0].user.pinned2[0] ? timeline[0].user.pinned1[0] : timeline[0].user.pinned2[0];
                     getSingleTweet(temp).then(tweet => {
-                        format(tweet).then(tweet_string => {
+                        format(tweet, -1, false, false, 0, 0, true).then(tweet_string => {
                             logger2.info("rtTimeline:" + tweet_string);
                             replyFunc(context, tweet_string + "\n" + `https://twitter.com/${tweet.user.screen_name}/status/${tweet.id_str}`);
                             if (video3[temp.toString()] != undefined) {
@@ -1244,7 +1244,7 @@ function rtTimeline(context, name, num) {
 
 function rtSingleTweet(tweet_id_str, context) {
     getSingleTweet(tweet_id_str).then(tweet => {
-        format(tweet, -1, false, true, 0).then(tweet_string => {
+        format(tweet, -1, false, true, 0, 0, true).then(tweet_string => {
             logger2.info("tweet_string:" + tweet_string);
             replyFunc(context, tweet_string);
             if (video3[tweet_id_str.toString()] != undefined) {
