@@ -702,7 +702,7 @@ function bilibiliCheck(context) {
         logger2.info("看看b站1");
         rtBilibili(context, name, num);
         return true;
-    } else if (/^看看https:\/\/t.bilibili.com\/(\d+).+?/i.test(context.message) || /^看看https:\/\/t.bilibili.com\/h5\/dynamic\/detail\/(\d+).+?/i.test(context.message)) {
+    } else if (/^看看(https|http):\/\/t.bilibili.com\/(\d+).+?/i.test(context.message) || /^看看(https|http):\/\/t.bilibili.com\/h5\/dynamic\/detail\/(\d+).+?/i.test(context.message)) {
         logger2.info("看看b站2");
         rtBiliByUrl(context);
         return true;
