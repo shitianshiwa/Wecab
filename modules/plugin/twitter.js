@@ -155,7 +155,7 @@ function firstConnect() {
 
 function sizeCheck(url, model = true) { //true 图片 false 视频
     return axios({
-        method: "head",
+        method: "GET",
         url: url,
         //是否启用代理访问推特
         proxy: proxy2,
