@@ -1353,7 +1353,7 @@ async function twitterAggr(context) {
         rtTimeline(context, name, num);
         return true;
     }
-    else if (connection && /^看看https:\/\/(mobile\.)?twitter.com\/.+?\/status\/(\d+)/i.test(context.message)) {
+    else if (connection && (/^看看https:\/\/(mobile\.)?twitter.com\/.+?\/status\/(\d+)/i.test(context.message) || /https:\/\/twitter.com\/i\/status\/(\d+)/i.test(context.message))) {
         if (suo == true) {
             return;
         } else {
