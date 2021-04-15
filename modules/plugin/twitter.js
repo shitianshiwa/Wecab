@@ -1394,14 +1394,14 @@ async function twitterAggr(context) {
         if (/owner|admin/.test(context.sender.role)) clearSubs(context, context.group_id);
         else replyFunc(context, '无权限');
         return true;
-    } else if (connection && (/^看看https:\/\/(video\.)?twimg\.com\/tweet_video\/.*\.mp4/i.test(context.message) || /^看看https:\/\/(video\.)?twimg\.com\/amplify_video\/\d+\/vid\/1280x720\/.*\.mp4/i.test(context.message) || /^看看https:\/\/(video\.)?twimg\.com\/ext_tw_video\/\d+\/pu\/vid\/1280x720\/.*\.mp4/i.test(context.message))) {
+    } else if (connection && (/^看看https:\/\/(video\.)?twimg\.com\/tweet_video\/.*\.mp4/i.test(context.message) || /^看看https:\/\/(video\.)?twimg\.com\/amplify_video\/\d+\/vid\/.*\/.*\.mp4/i.test(context.message) || /^看看https:\/\/(video\.)?twimg\.com\/ext_tw_video\/\d+\/pu\/vid\/.*\/.*\.mp4/i.test(context.message))) {
         //logger2.info("video");
         if (suo == true) {
             return;
         } else {
             suo = true;
         }
-        let url = /https:\/\/video\.twimg\.com\/tweet_video\/.*\.mp4/.exec(context.message) || /https:\/\/video\.twimg\.com\/amplify_video\/\d+\/vid\/1280x720\/.*\.mp4/.exec(context.message) || /https:\/\/video\.twimg\.com\/ext_tw_video\/\d+\/pu\/vid\/1280x720\/.*\.mp4/.exec(context.message);
+        let url = /https:\/\/video\.twimg\.com\/tweet_video\/.*\.mp4/.exec(context.message) || /https:\/\/video\.twimg\.com\/amplify_video\/\d+\/vid\/.*\/.*\.mp4/.exec(context.message) || /https:\/\/video\.twimg\.com\/ext_tw_video\/\d+\/pu\/vid\/.*\/.*\.mp4/.exec(context.message);
         if (url != null) {
             downloadvideo(url[0], context);
         }
