@@ -5,3 +5,4 @@ module.exports = function mkdirTmp() {
     for (let dir of ["./tmp", "./tmp/pic", "./tmp/video"]) {
         if (!fs.existsSync(dir)) fs.mkdirSync(dir);
     }
+}
