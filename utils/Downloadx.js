@@ -17,21 +17,24 @@ else axios = Axios;
 
 async function Downloadx(url) {
     let name = MD5(url);
+    let path2 = path.join(__dirname, `../tmp/`);
+    let picpath=path.join(path2, `pic`);
+    let vidpath=path.join(path2, `video`);
     logger2.info(["下载文件", url, "目标文件名", name].join(", "));
-    
+
     //如果已经存在则直接返回路径
     for (let ext of ["jpg", "mp4"]) {
-        let tmpdir = ext == "jpg" ? "./tmp/pic" : "./tmp/video";
-        if (!fs.existsSync("./tmp")) fs.mkdirSync("./tmp");
+        let tmpdir = (ext == "jpg" ? picpath : vidpath);
+        if (!fs.existsSync(path2)) fs.mkdirSync(path2);
         if (!fs.existsSync(tmpdir)) fs.mkdirSync(tmpdir);
-        
+
         let tmp = path.join(tmpdir, `${name}.${ext}`);
         if (fs.existsSync(tmp)) {
             logger2.info("已存在文件: " + tmp);
             return tmp;
         }
     }
-    
+
     const response = await axios({
         url,
         method: "GET",
@@ -47,8 +50,8 @@ async function Downloadx(url) {
         let mypath = "";
         let filename = `${name}.${fileType}`;
 
-        if (fileType == "jpg") mypath = path.join("./tmp/pic", filename);
-        else if (fileType == "mp4") mypath = path.join("./tmp/video", filename);
+        if (fileType == "jpg") mypath = path.join(picpath, filename);
+        else if (fileType == "mp4") mypath = path.join(vidpath, filename);
         else return false;
 
         const writer = fs.createWriteStream(mypath);
