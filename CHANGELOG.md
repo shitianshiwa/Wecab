@@ -2,6 +2,82 @@
   
 ## 2021
 
+### 05/02 v1.8.22
+* plugin/twitter:
+  * Fix: 视频和图片发送失败（CQ码错误）
+
+### 04/24 v1.8.2
+* plugin/twitter:
+  * Feat: 支持使用代理下载多媒体内容
+  * Fix: for let
+* utils/download:
+  * Fix: 路径错误，axios代理错误
+* utils/initialise:
+  * Feat: 初始化更多工具
+
+### 04/24 v1.8.0
+* plugin/bilibili:
+  * Fix: 订阅数量超过一定时频繁412error
+* plugin/twitter:
+  * Feat: 移动代理设置到axiosProxied
+
+### 04/16 v1.7.9
+* main & utils/userManagement:
+  * Feat: 增加取消管理员指令 `desu`
+
+### 04/15 v1.7.8
+* utils/axiosProxied.js:
+  * Feat: axios代理
+* utils/download.js
+  * Feat: 更多可下载文件格式
+  * Feat: 不支持的格式会提示，失败时会显示链接
+  * Style: esm
+
+### 04/13 v1.7.7
+* main:
+  * Feat: 可以使用指令增加管理员了
+  * Change: 原Logger仅作为复读计数使用，其他功能移动到userManagement
+
+### 04/12 v1.7.6
+* utils/userManagement:
+  * Feat: 增加SU用户列表（在data/userControl.json）
+* main:
+  * Feat: 把SU列表里的人权限提高
+  * Style: 缩进
+
+### 04/11 v1.7.53
+* Chore: move around
+  * move modules => utils
+  * move modules/plugin => plugin
+
+### 04/10 v1.7.52
+* Feat: 更新指令
+  * pm2start => start
+  * pm2stop => stop
+  * pm2log => log
+  * start => use node .
+  * test => (remove)
+
+### 04/09 v1.7.51
+* modules/plugin/weibo:
+  * Fix: 视频链接未转义导致CQ码错误视频发送失败
+
+### 04/04 v1.7.5
+* modules/plugin/weibo:
+  * Feat: 新增权限检查
+  * Feat: 新增停启判断
+  * Style: add semicolon
+* modules/config:
+  * Rename: configStorage => config
+* utils/initialise
+  * Feat: permissionCheck
+* main:
+  * Feat: 可以设定是否检查时间线
+* config.default.json:
+  * 新增 weibo, bilibili, twitter, mongoDB  
+    learn字段移出bot,  
+    bot字段新增noPermission
+
 ### 04/01 v1.7.41
 * Main:
   * Feat: 提高admin的权限

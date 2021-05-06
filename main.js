@@ -1,46 +1,42 @@
 import { version } from './package.json';
 import { CQWebSocket } from 'cq-websocket';
-import config from './modules/config';
-import CQ from './modules/CQcode';
-import Logger from './modules/Logger';
+import config from './utils/config';
+import {initialise} from "./utils/initilise";
+import CQ from './utils/CQcode';
+import userManagement from "./utils/userManagement";
+import RptLogger from './utils/rptLogger';
 import RandomSeed from 'random-seed';
 import minimist from 'minimist';
-import weibo from './modules/plugin/weibo';
-import bilibili from './modules/plugin/bilibili';
-import twitter from './modules/plugin/twitter';
-import dice from './modules/plugin/dice';
-import pokemon from './modules/plugin/pokemon';
-import pretendLearn from "./modules/plugin/pretendLearn";
-import translate from "./modules/plugin/translate";
-import pixivImage from "./modules/plugin/pixivImage";
-import helpZen from "./modules/plugin/zen";
-import nbnhhsh from "./modules/plugin/nbnhhsh";
-import iHaveAfriend from './modules/plugin/iHaveAfriend';
-import telephone from './modules/plugin/telephone';
-import {initialise} from "./utils/initilise";
+import weibo from './plugin/weibo';
+import bilibili from './plugin/bilibili';
+import twitter from './plugin/twitter';
+import dice from './plugin/dice';
+import pokemon from './plugin/pokemon';
+import pretendLearn from "./plugin/pretendLearn";
+import translate from "./plugin/translate";
+import pixivImage from "./plugin/pixivImage";
+import helpZen from "./plugin/zen";
+import nbnhhsh from "./plugin/nbnhhsh";
+import iHaveAfriend from './plugin/iHaveAfriend';
+import telephone from './plugin/telephone';
 
 // 初始化开始
 const setting = config.bot;
 const bot = new CQWebSocket(config.cqws);
 const rand = RandomSeed.create();
-const logger = new Logger();
+const rptLog = new RptLogger();
 
-initialise();
-Object.assign(global, {
-    bot,
-    "replyFunc" : replyMsg
-});
+initialise({bot, "replyFunc": replyMsg});
 
-weibo.weiboReply(replyMsg);
 bilibili.bilibiliReply(replyMsg);
 twitter.twitterReply(replyMsg);
-pretendLearn.learnReply(replyMsg, logger);
+pretendLearn.learnReply(replyMsg, rptLog);
 nbnhhsh.reply(replyMsg);
 telephone.init(replyMsg, bot);
 
-weibo.checkWeiboDynamic();
-setTimeout(() => bilibili.checkBiliDynamic(replyMsg), 20000);
-setTimeout(() => twitter.checkTwiTimeline(), 40000);
+if (config.weibo.timelineCheck) weibo.checkWeiboDynamic();
+if (config.bilibili.timelineCheck) setTimeout(() => bilibili.checkBiliDynamic(replyMsg), 20000);
+if (config.twitter.timelineCheck) setTimeout(() => twitter.checkTwiTimeline(), 40000);
 
 //好友请求
 bot.on('request.friend', context => {
@@ -115,12 +111,23 @@ bot.on('message.private', (e, context) => {
     //Ban
     const { 'ban-u': bu, 'ban-g': bg } = args;
     if (bu && typeof bu == 'number') {
-        Logger.ban('u', bu);
+        userManagement.ban('u', bu);
         replyMsg(context, `已封禁用户${bu}`);
     }
     if (bg && typeof bg == 'number') {
-        Logger.ban('g', bg);
+        userManagement.ban('g', bg);
         replyMsg(context, `已封禁群组${bg}`);
+    }
+
+    //superuser management
+    const {"su": su, "desu": desu} = args;
+    if (su && typeof su == 'number') {
+        userManagement.addSu(su);
+        replyMsg(context, `已设置管理员${su}`);
+    }
+    if (desu && typeof desu == 'number') {
+        userManagement.rmSu(desu);
+        replyMsg(context, `已取消管理员${desu}`);
     }
 
     //停止程序（利用pm2重启）
@@ -182,7 +189,7 @@ bot.connect();
 
 function notice(context) {
     context.message_type = 'group';
-    if (Logger.checkBan(context.user_id, context.group_id)) return true;
+    if (userManagement.checkBan(context.user_id, context.group_id)) return true;
     if (context.notice_type == 'group_increase' 
         && setting.notification.group_increase.length > 0) replyMsg(context, setting.notification.group_increase);
     else if (context.notice_type == 'group_decrease'  
@@ -192,12 +199,15 @@ function notice(context) {
 //通用处理
 function commonHandle(e, context) {
     //黑名单检测
-    if (Logger.checkBan(context.user_id, context.group_id)) return true;
+    if (userManagement.checkBan(context.user_id, context.group_id)) return true;
 
     // admin权限拉高
     if (context.user_id == config.bot.admin) {
         context.sender.role = "SU";
     }
+
+    // SU权限拉高
+    context = userManagement.updateRole(context);
 
     //兼容其他机器人
     const startChar = context.message.charAt(0);
@@ -263,16 +273,16 @@ function groupMsg(e, context) {
     const { group_id, user_id } = context;
 
     if (weibo.weiboAggr(context, replyMsg) ||
-             bilibili.bilibiliCheck(context) ||
-             twitter.twitterAggr(context) ||
-             pixivImage.pixivCheck(context, replyMsg, bot) ||
-             helpZen(context, replyMsg, bot, rand) ||
-             translate.transEntry(context) ||
-             iHaveAfriend.deal(context, replyMsg, bot) ||
-             nbnhhsh.demyth(context) ||
-             pokemon.pokemonCheck(context, replyMsg) ||
-             telephone.dial(context)
-             ) {
+        bilibili.bilibiliCheck(context) ||
+        twitter.twitterAggr(context) ||
+        pixivImage.pixivCheck(context, replyMsg, bot) ||
+        helpZen(context, replyMsg, bot, rand) ||
+        translate.transEntry(context) ||
+        iHaveAfriend.deal(context, replyMsg, bot) ||
+        nbnhhsh.demyth(context) ||
+        pokemon.pokemonCheck(context, replyMsg) ||
+        telephone.dial(context)
+    ) {
         e.stopPropagation();
         return;
     }
@@ -285,8 +295,8 @@ function groupMsg(e, context) {
         context.message = text_bak;
         //复读（
         //随机复读，rptLog得到当前复读次数
-        if (logger.rptLog(group_id, user_id, context.message) >= setting.repeat.times && getRand() <= setting.repeat.probability) {
-            logger.rptDone(group_id);
+        if (rptLog.rptLog(group_id, user_id, context.message) >= setting.repeat.times && getRand() <= setting.repeat.probability) {
+            rptLog.rptDone(group_id);
             //延迟2s后复读
             setTimeout(() => {
                 replyMsg(context, context.message);
@@ -297,7 +307,7 @@ function groupMsg(e, context) {
                 replyMsg(context, context.message);
             }, 1000);
         } else {
-            if (getRand() <= setting.learn.probability) pretendLearn.talk(context);
+            if (getRand() <= config.learn.probability) pretendLearn.talk(context);
         }
     }
 }
